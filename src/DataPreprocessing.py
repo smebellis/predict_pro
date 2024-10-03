@@ -39,6 +39,8 @@ class DataPreprocessing:
             raise ValueError(
                 f"The DataFrame does not contain the '{missing_data_column}' column."
             )
+        if df.empty:
+            raise IndexError("Cannot extract POLYLINE from an empty DataFrame.")
 
         # Using the tilde (~) operator for boolean negation (more idiomatic)
         filtered_df = df[~df[missing_data_column].astype(bool)].reset_index(drop=True)
@@ -72,6 +74,8 @@ class DataPreprocessing:
             raise ValueError(
                 f"The DataFrame does not contain the '{data_column}' column."
             )
+        if df.empty:
+            raise IndexError("Cannot extract POLYLINE from an empty DataFrame.")
 
         converted_df = pd.to_datetime(df[data_column])
 
@@ -84,6 +88,12 @@ class DataPreprocessing:
             raise ValueError(
                 f"The DataFrame does not contain the '{data_column}' column."
             )
+        if df.empty:
+            raise IndexError("Cannot extract POLYLINE from an empty DataFrame.")
+        start_location = df.iloc[0]["POLYLINE"]
+        end_location = df.iloc[-1]["POLYLINE"]
+
+        return start_location, end_location
 
     def preprocess(self):
         self.remove_missing_gps()

@@ -48,7 +48,7 @@ class DataPreprocessing:
         return filtered_df
 
     def convert_timestamp(
-        self, df: pd.DataFrame, data_column: str = "TIMESTAMP"
+        self, df: pd.DataFrame, timestamp_column: str = "TIMESTAMP"
     ) -> pd.DataFrame:
         """
         Converts a UNIX timestamp into a windows timestamp in the year-month-day hour minute-second format
@@ -70,20 +70,35 @@ class DataPreprocessing:
         ValueError
             If the specified timestamp column does not exist in the DataFrame.
         """
-        if data_column not in df.columns:
+        if timestamp_column not in df.columns:
             raise ValueError(
-                f"The DataFrame does not contain the '{data_column}' column."
+                f"The DataFrame does not contain the '{timestamp_column}' column."
             )
         if df.empty:
             raise IndexError("Cannot extract POLYLINE from an empty DataFrame.")
 
-        converted_df = pd.to_datetime(df[data_column])
+        df[timestamp_column] = pd.to_datetime(
+            df[timestamp_column], unit="s"
+        ).dt.tz_localize(None)
 
-        return converted_df
+        return df
 
     def extract_polyline(
         self, df: pd.DataFrame, data_column: str = "POLYLINE"
     ) -> pd.DataFrame:
+        """
+        Extracts the start and end POLYLINE locations from the DataFrame.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame with a 'POLYLINE' column.
+
+        Returns:
+        -------
+        tuple:
+            (start_location, end_location)
+        """
         if data_column not in df.columns:
             raise ValueError(
                 f"The DataFrame does not contain the '{data_column}' column."

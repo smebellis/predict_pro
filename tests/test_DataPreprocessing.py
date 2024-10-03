@@ -19,21 +19,23 @@ class TestDataPreprocessing(unittest.TestCase):
 
     def test_convert_timestamp(self):
         data = {
-            "TIMESTAMP": [1727833970, 1727747570, 1727661170, 1727574770, 1727488370]
+            "TIMESTAMP": [1672024955, 357223268, 1286429319, 1217817752, 1057457493]
         }
         df = pd.DataFrame(data)
-        cleaned_df = self.data_preprocessor.convert_timestamp(df)
+        actual_df = self.data_preprocessor.convert_timestamp(df)
 
-        if isinstance(cleaned_df, pd.Series):
-            cleaned_df = cleaned_df.to_frame()
-        expected_df = pd.DataFrame(
-            {
-                "TIMESTAMP": pd.to_datetime(
-                    [1727833970, 1727747570, 1727661170, 1727574770, 1727488370]
-                )
-            }
-        )
-        pd.testing.assert_frame_equal(cleaned_df, expected_df)
+        expected_data = {
+            "TIMESTAMP": [
+                pd.Timestamp("2022-12-26 03:22:35", unit="s").tz_localize(None),
+                pd.Timestamp("1981-04-27 12:41:08", unit="s").tz_localize(None),
+                pd.Timestamp("2010-10-07 05:28:39", unit="s").tz_localize(None),
+                pd.Timestamp("2008-08-04 02:42:32", unit="s").tz_localize(None),
+                pd.Timestamp("2003-07-06 02:11:33", unit="s").tz_localize(None),
+            ]
+        }
+        expected_df = pd.DataFrame(expected_data)
+
+        pd.testing.assert_frame_equal(actual_df, expected_df)
 
     def test_extract_polyline(self):
         data = {

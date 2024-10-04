@@ -239,6 +239,22 @@ class TestDataPreprocessing(unittest.TestCase):
         expected_times = [30, 15, 0]
         self.assertListEqual(list(df["TRAVEL_TIME"]), expected_times)
 
+    def test_calculate_end_time(self):
+        data = {
+            "TIMESTAMP": [
+                pd.Timestamp("2022-12-26 03:22:35"),
+                pd.Timestamp("1981-04-27 12:41:08"),
+            ],
+            "TRAVEL_TIME": [30, 15],
+        }
+        df = pd.DataFrame(data)
+        expected_end_time = [
+            pd.Timestamp("2022-12-26 03:23:05"),
+            pd.Timestamp("1981-04-27 12:41:23"),
+        ]
+        result_df = self.data_preprocessor.calculate_end_time(df)
+        self.assertListEqual(result_df["END_TIME"].tolist(), expected_end_time)
+
 
 if __name__ == "__main__":
     unittest.main()

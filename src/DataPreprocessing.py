@@ -46,6 +46,8 @@ class DataPreprocessing:
         if df.empty:
             raise IndexError("Cannot extract POLYLINE from an empty DataFrame.")
 
+        filtered_df = df.copy()
+
         # Using the tilde (~) operator for boolean negation (more idiomatic)
         filtered_df = df[~df[missing_data_column].astype(bool)].reset_index(drop=True)
 
@@ -151,13 +153,14 @@ class DataPreprocessing:
             raise IndexError(
                 "The input DataFrame is empty. Returning the DataFrame as is."
             )
+        start_df = df.copy()
 
-        df["START"] = [
+        start_df["START"] = [
             poly[0] if isinstance(poly, list) and len(poly) > 0 else None
             for poly in df["POLYLINE"]
         ]
 
-        return df
+        return start_df
 
     def extract_end_location(
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
@@ -185,12 +188,14 @@ class DataPreprocessing:
                 "The input DataFrame is empty. Returning the DataFrame as is."
             )
 
-        df["END"] = [
+        end_df = df.copy()
+
+        end_df["END"] = [
             poly[-1] if isinstance(poly, list) and len(poly) > 0 else None
             for poly in df["POLYLINE"]
         ]
 
-        return df
+        return end_df
 
     def safe_convert_string_to_list(
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
@@ -331,6 +336,53 @@ class DataPreprocessing:
         year_df["YEAR"] = year_df[timestamp_column].dt.year
 
         return year_df
+
+    def calculate_end_time(
+        self,
+        df: pd.DataFrame,
+        start_time_column: str = "TIMESTAMP",
+        travel_time_column: str = "TRAVEL_TIME",
+    ) -> pd.DataFrame:
+        """
+        Calculate end time by adding travel time to the start time.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame.
+        start_time_column : str, optional
+            The name of the column that contains start time data (default is "TIMESTAMP").
+        travel_time_column : str, optional
+            The name of the column that contains travel time data (default is "TRAVEL_TIME").
+
+        Returns:
+        -------
+        pd.DataFrame
+            The DataFrame with a new column 'END_TIME'.
+
+        Raises:
+        ------
+        ValueError
+            If the specified start time or travel time columns do not exist or contain invalid data.
+        """
+        for col in [start_time_column, travel_time_column]:
+            if col not in df.columns:
+                raise ValueError(f"The DataFrame does not contain the '{col}' column.")
+
+        if df.empty:
+            raise IndexError("Cannot calculate end time for an empty DataFrame.")
+
+        if not pd.api.types.is_datetime64_any_dtype(df[start_time_column]):
+            raise TypeError(f"The '{start_time_column}' column must be datetime type.")
+
+        if not pd.api.types.is_numeric_dtype(df[travel_time_column]):
+            raise TypeError(f"The '{travel_time_column}' column must be numeric type.")
+
+        end_df = df.copy()
+        end_df["END_TIME"] = end_df[start_time_column] + pd.to_timedelta(
+            end_df[travel_time_column], unit="s"
+        )
+        return end_df
 
     def preprocess(
         self,

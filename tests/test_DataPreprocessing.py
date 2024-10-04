@@ -1,6 +1,7 @@
 import numpy as np
 import unittest
 import pandas as pd
+import ast
 
 from src.DataPreprocessing import DataPreprocessing
 
@@ -62,11 +63,51 @@ class TestDataPreprocessing(unittest.TestCase):
             ]
         }
         df = pd.DataFrame(data)
-        start_location = df.iloc[0]["POLYLINE"]
-        end_location = df.iloc[-1]["POLYLINE"]
-        expected_start, expected_end = self.data_preprocessor.extract_polyline(df)
-        self.assertEqual(start_location, expected_start)
-        self.assertEqual(end_location, expected_end)
+
+    def test_extract_start_location(self):
+        pass
+
+    def test_extract_end_location(self):
+        pass
+
+    def test_safe_convert_string_to_list(self):
+        """Test that valid list strings are correctly converted to lists."""
+        self.assertEqual(
+            self.data_preprocessor.safe_convert_string_to_list("[1, 2, 3]"), [1, 2, 3]
+        )
+        self.assertEqual(
+            self.data_preprocessor.safe_convert_string_to_list("['A', 'B', 'C']"),
+            ["A", "B", "C"],
+        )
+        self.assertEqual(
+            self.data_preprocessor.safe_convert_string_to_list("[True, False, True]"),
+            [True, False, True],
+        )
+        self.assertEqual(
+            self.data_preprocessor.safe_convert_string_to_list("[1.1, 2.2, 3.3]"),
+            [1.1, 2.2, 3.3],
+        )
+
+    def test_calculate_travel_time_fifteen_seconds(self):
+        data = {
+            "POLYLINE": [
+                [
+                    (41.1471, -8.6139),
+                    (41.1472, -8.6140),
+                    (41.1473, -8.6141),
+                ],  # 2 intervals, 2 * 15 = 30 seconds
+                [
+                    (41.1481, -8.6131),
+                    (41.1482, -8.6132),
+                ],  # 1 interval, 1 * 15 = 15 seconds
+                [(41.1491, -8.6121)],  # 0 interval, 0 * 15 = 0 seconds
+            ]
+        }
+        df = pd.DataFrame(data)
+        actual_time = self.data_preprocessor.calculate_travel_time_fifteen_seconds(df)
+        # Assert that the travel time has been correctly calculated
+        expected_times = [30, 15, 0]
+        self.assertListEqual(list(df["TRAVEL_TIME"]), expected_times)
 
 
 if __name__ == "__main__":

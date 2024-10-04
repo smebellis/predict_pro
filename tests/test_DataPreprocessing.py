@@ -258,7 +258,7 @@ class TestDataPreprocessing(unittest.TestCase):
         result_df = self.data_preprocessor.calculate_end_time(df)
         self.assertListEqual(result_df["END_TIME"].tolist(), expected_end_time)
 
-    def test_save_dataframe_not_exists(self):
+    def test_save_dataframe_if_not_exists(self):
         self.sample_df = pd.DataFrame({"A": [1, 2, 3], "B": ["x", "y", "z"]})
 
         with TemporaryDirectory() as tmpdir:
@@ -268,6 +268,30 @@ class TestDataPreprocessing(unittest.TestCase):
             )
             self.assertTrue(was_saved)
             self.assertTrue(Path(file_path).exists())
+
+    def test_save_csv_overwrite_file_exists(self):
+        self.sample_df = pd.DataFrame({"A": [1, 2, 3], "B": ["x", "y", "z"]})
+
+        with TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, "test.csv")
+
+            # First save
+            self.data_preprocessor.save_dataframe_overwrite(
+                self.sample_df, file_path, file_format="csv"
+            )
+            self.assertTrue(Path(file_path).exists(), "CSV file was not created.")
+
+            # Modify the DataFrame
+            modified_df = pd.DataFrame({"A": [4, 5, 6], "B": ["u", "v", "w"]})
+
+            # Overwrite the existing file
+            self.data_preprocessor.save_dataframe_overwrite(
+                modified_df, file_path, file_format="csv"
+            )
+
+            # Read back the file to ensure it's overwritten
+            saved_df = pd.read_csv(file_path)
+            pd.testing.assert_frame_equal(saved_df, modified_df, check_dtype=True)
 
 
 if __name__ == "__main__":

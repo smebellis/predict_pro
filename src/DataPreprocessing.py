@@ -2,15 +2,50 @@ import numpy as np
 import pandas as pd
 import ast
 import logging
+from logging.handlers import RotatingFileHandler
 from typing import Optional, Tuple
 from pathlib import Path
 
 
 class DataPreprocessing:
-    def __init__(self):
-        # Configure logging
-        logging.basicConfig(level=logging.INFO)
-        self.logger = logging.getLogger(__name__)
+    def __init__(self, log_file: str = "data_preprocessor.log"):
+        """
+        Initialize the DataPreprocessor with a dedicated logger that logs to both a file and stdout.
+
+        Parameters:
+        ----------
+        log_file : str, optional
+            The filename for the log file. Default is 'data_preprocessor.log'.
+        """
+        self.logger = logging.getLogger("DataPreprocessorLogger")
+        self.logger.setLevel(logging.DEBUG)  # Capture all levels of logs
+
+        # Prevent adding multiple handlers if the logger already has them
+        if not self.logger.handlers:
+            # Formatter for log messages
+            formatter = logging.Formatter(
+                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            )
+
+            # File Handler with Rotation
+            file_handler = RotatingFileHandler(
+                log_file,
+                maxBytes=5 * 1024 * 1024,  # 5 MB
+                backupCount=5,  # Keep up to 5 backup files
+            )
+            file_handler.setLevel(logging.DEBUG)  # Log all levels to file
+            file_handler.setFormatter(formatter)
+
+            # Stream Handler for stdout
+            stream_handler = logging.StreamHandler()
+            stream_handler.setLevel(logging.INFO)  # Log INFO and above to console
+            stream_handler.setFormatter(formatter)
+
+            # Add Handlers to the Logger
+            self.logger.addHandler(file_handler)
+            self.logger.addHandler(stream_handler)
+
+        self.logger.debug("Logger initialized and handlers added.")
 
     def remove_missing_gps(
         self,
@@ -423,8 +458,56 @@ class DataPreprocessing:
 
             return True
         else:
-            self.logger.info(f"File {file_path} already exists. Skipping save.")
+
             return False
+
+    def save_dataframe_overwrite(
+        self, df: pd.DataFrame, file_path: str, file_format: str = "csv", **kwargs
+    ) -> None:
+        """
+        Save a DataFrame to a file, overwriting it if it already exists.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The DataFrame to save.
+        file_path : str
+            The path to the file where the DataFrame should be saved.
+        kwargs :
+            Additional keyword arguments to pass to the pandas saving method.
+
+        Returns:
+        -------
+        None
+        """
+        path = Path(file_path)
+        try:
+            # Create parent directories if they don't exist
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            # Save based on the specified format
+            if file_format.lower() == "csv":
+                df.to_csv(path, index=False, **kwargs)
+            elif file_format.lower() in ["xls", "xlsx"]:
+                df.to_excel(path, index=False, **kwargs)
+            elif file_format.lower() == "json":
+                df.to_json(path, **kwargs)
+            elif file_format.lower() == "parquet":
+                df.to_parquet(path, index=False, **kwargs)
+            elif file_format.lower() == "feather":
+                df.to_feather(path, **kwargs)
+            elif file_format.lower() == "hdf":
+                df.to_hdf(path, key="df", mode="w", **kwargs)
+            else:
+                raise ValueError(f"Unsupported file format: {file_format}")
+
+            logging.info(f"File saved to {file_path}. (Overwritten if it existed)")
+        except PermissionError:
+            logging.error(f"Permission denied: Cannot write to {file_path}.")
+            raise
+        except Exception as e:
+            logging.error(f"An error occurred while saving the file: {e}")
+            raise
 
     def preprocess(
         self,

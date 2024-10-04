@@ -3,6 +3,7 @@ import pandas as pd
 import ast
 import logging
 from typing import Optional, Tuple
+from pathlib import Path
 
 
 class DataPreprocessing:
@@ -384,6 +385,47 @@ class DataPreprocessing:
         )
         return end_df
 
+    def save_dataframe_if_not_exists(
+        self, df: pd.DataFrame, file_path: str, file_format: str = "csv", **kwargs
+    ) -> bool:
+        """
+        Save a DataFrame to a file only if the file does not already exist.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The DataFrame to save.
+        file_path : str
+            The path to the file where the DataFrame should be saved.
+        file_format : str, optional
+            The format to save the DataFrame in (e.g., 'csv', 'excel'). Default is 'csv'.
+        kwargs :
+            Additional keyword arguments to pass to the pandas saving method.
+
+        Returns:
+        -------
+        bool
+            True if the file was saved, False if it already exists.
+        """
+        path = Path(file_path)
+        if not path.exists():
+            path.parent.mkdir(parents=True, exist_ok=True)
+
+            if file_format.lower() == "csv":
+                df.to_csv(path, index=False, **kwargs)
+            elif file_format.lower() in ["xls", "xlsx"]:
+                df.to_excel(path, index=False, **kwargs)
+            elif file_format.lower() == "json":
+                df.to_json(path, **kwargs)
+            else:
+                self.logger.error(f"Unsupported file format: {file_format}")
+                raise ValueError(f"Unsupported file format: {file_format}")
+
+            return True
+        else:
+            self.logger.info(f"File {file_path} already exists. Skipping save.")
+            return False
+
     def preprocess(
         self,
         df: pd.DataFrame,
@@ -391,6 +433,7 @@ class DataPreprocessing:
         missing_flag: bool = True,
         timestamp_column: str = "TIMESTAMP",
         polyline_column: str = "POLYLINE",
+        travel_time_column: str = "TRAVEL_TIME",
     ) -> pd.DataFrame:
         """
         Apply a series of preprocessing steps to the DataFrame:
@@ -400,9 +443,11 @@ class DataPreprocessing:
         4. Convert Polyline column to list
         5. Extract start location from Polyline column
         6. Extract end location from Polyline column
-        7. Add weekday output
-        8. Add Month output
-        9. Add year output
+        7. Calculate End Time of Trip
+        8. Add weekday output
+        9. Add Month output
+        10. Add year output
+        11. Save output to csv
 
         Parameters
         ----------
@@ -416,6 +461,10 @@ class DataPreprocessing:
             The column containing UNIX timestamps (default is "TIMESTAMP").
         polyline_column : str, optional
             The column containing polyline data (default is "POLYLINE").
+        start_time_column: str = "TIMESTAMP"
+            The column containing the datetime
+        travel_time_column: str = "TRAVEL_TIME"
+            The column containg the travel time
 
         Returns
         -------
@@ -449,17 +498,32 @@ class DataPreprocessing:
             self.logger.info("Extracting end locations from Polyline column.")
             df = self.extract_end_location(df, polyline_column)
 
-            # Step 7: Add weekday output
+            # Step 6: Extract end location from Polyline column
+            self.logger.info("Extracting end time from Starting Time and Travel Time.")
+            df = self.calculate_end_time(df, timestamp_column, travel_time_column)
+
+            # Step 8: Add weekday output
             self.logger.info("Adding weekday information.")
             df = self.add_weekday(df, timestamp_column)
 
-            # Step 8: Add Month output
+            # Step 9: Add Month output
             self.logger.info("Adding Month information.")
             df = self.add_month(df, timestamp_column)
 
-            # Step 8: Add Month output
+            # Step 10: Add Month output
             self.logger.info("Adding Year information.")
             df = self.add_year(df, timestamp_column)
+
+            # Step 11: Save the DataFrame to a CSV file only if it doesn't exist
+            file_path = "processed_data/update_taxi_trajectory.csv"
+            was_saved = self.save_dataframe_if_not_exists(
+                df, file_path, file_format="csv"
+            )
+
+            if was_saved:
+                self.logger.info(f"File saved to {file_path}.")
+            else:
+                self.logger.info(f"File {file_path} already exists. Skipping save.")
 
             self.logger.info("Preprocessing pipeline completed successfully.")
             return df

@@ -2,6 +2,9 @@ import numpy as np
 import unittest
 import pandas as pd
 import ast
+import os
+from pathlib import Path
+from tempfile import TemporaryDirectory
 
 from src.DataPreprocessing import DataPreprocessing
 
@@ -254,6 +257,17 @@ class TestDataPreprocessing(unittest.TestCase):
         ]
         result_df = self.data_preprocessor.calculate_end_time(df)
         self.assertListEqual(result_df["END_TIME"].tolist(), expected_end_time)
+
+    def test_save_dataframe_not_exists(self):
+        self.sample_df = pd.DataFrame({"A": [1, 2, 3], "B": ["x", "y", "z"]})
+
+        with TemporaryDirectory() as tmpdir:
+            file_path = os.path.join(tmpdir, "test.csv")
+            was_saved = self.data_preprocessor.save_dataframe_if_not_exists(
+                self.sample_df, file_path, file_format="csv"
+            )
+            self.assertTrue(was_saved)
+            self.assertTrue(Path(file_path).exists())
 
 
 if __name__ == "__main__":

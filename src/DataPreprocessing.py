@@ -81,11 +81,18 @@ class DataPreprocessing:
         if df.empty:
             raise IndexError("Cannot extract POLYLINE from an empty DataFrame.")
 
-        df[timestamp_column] = pd.to_datetime(
-            df[timestamp_column], unit="s"
-        ).dt.tz_localize(None)
+        # Copy df to prevent edtiting the originial
+        converted_df = df.copy()
 
-        return df
+        # Make a check that the timestamp is in the correct format
+        try:
+            converted_df[timestamp_column] = pd.to_datetime(
+                converted_df[timestamp_column], unit="s", errors="raise"
+            )
+        except Exception as e:
+            raise ValueError(f"Error converting '{timestamp_column}' to datetime: {e}")
+
+        return converted_df
 
     def calculate_travel_time_fifteen_seconds(
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
@@ -214,6 +221,117 @@ class DataPreprocessing:
         df_converted["POLYLINE"] = df_converted[polyline_column].apply(ast.literal_eval)
         return df_converted
 
+    def add_weekday(
+        self, df: pd.DataFrame, timestamp_column: str = "TIMESTAMP"
+    ) -> pd.DataFrame:
+        """
+        Calculate the weekday from the timestamp column and add it as a new column.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame with a datetime timestamp column.
+        timestamp_column : str, optional
+            The name of the column that contains datetime timestamp data (default is "TIMESTAMP").
+
+        Returns:
+        -------
+        pd.DataFrame
+            The DataFrame with a new column named 'WEEKDAY'.
+
+        Raises:
+        ------
+        ValueError
+            If the specified timestamp column does not exist in the DataFrame.
+        """
+        if timestamp_column not in df.columns:
+            raise ValueError(
+                f"The DataFrame does not contain the '{timestamp_column}' column."
+            )
+        if df.empty:
+            raise IndexError("Cannot add 'WEEKDAY' to an empty DataFrame.")
+
+        # Make a copy to avoid altering original dataframe
+        weekday_df = df.copy()
+
+        weekday_df["WEEKDAY"] = weekday_df[timestamp_column].dt.day_name()
+
+        return weekday_df
+
+    def add_month(
+        self, df: pd.DataFrame, timestamp_column: str = "TIMESTAMP"
+    ) -> pd.DataFrame:
+        """
+        Calculate the month from the timestamp column and add it as a new column.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame with a datetime timestamp column.
+        timestamp_column : str, optional
+            The name of the column that contains datetime timestamp data (default is "TIMESTAMP").
+
+        Returns:
+        -------
+        pd.DataFrame
+            The DataFrame with a new column named 'MONTH'.
+
+        Raises:
+        ------
+        ValueError
+            If the specified timestamp column does not exist in the DataFrame.
+        """
+        if timestamp_column not in df.columns:
+            raise ValueError(
+                f"The DataFrame does not contain the '{timestamp_column}' column."
+            )
+        if df.empty:
+            raise IndexError("Cannot add 'MONTH' to an empty DataFrame.")
+
+        # Make a copy to avoid altering original dataframe
+        month_df = df.copy()
+
+        month_df["MONTH"] = month_df[timestamp_column].dt.month_name()
+
+        return month_df
+
+    def add_year(
+        self, df: pd.DataFrame, timestamp_column: str = "TIMESTAMP"
+    ) -> pd.DataFrame:
+        """
+        Calculate the year the timestamp column and adds it into the dataframe
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame.
+        timestamp_column : str, optional
+            The name of the column that indicates the timestamp data (default is "TIMESTAMP").
+
+        Returns:
+        -------
+        pd.DataFrame
+            The DataFrame with the converted timestamp in a new column named 'CONVERTED_TIMESTAMP'.
+
+        Raises:
+        ------
+        ValueError
+            If the specified timestamp column does not exist in the DataFrame.
+        """
+        if timestamp_column not in df.columns:
+            raise ValueError(
+                f"The DataFrame does not contain the '{timestamp_column}' column."
+            )
+        if df.empty:
+            raise IndexError("Cannot extract POLYLINE from an empty DataFrame.")
+
+        # Make a copy to avoid altering original dataframe
+        year_df = df.copy()
+
+        year_df["YEAR"] = year_df[timestamp_column].dt.year
+
+        return year_df
+
     def preprocess(
         self,
         df: pd.DataFrame,
@@ -231,6 +349,8 @@ class DataPreprocessing:
         5. Extract start location from Polyline column
         6. Extract end location from Polyline column
         7. Add weekday output
+        8. Add Month output
+        9. Add year output
 
         Parameters
         ----------
@@ -280,6 +400,14 @@ class DataPreprocessing:
             # Step 7: Add weekday output
             self.logger.info("Adding weekday information.")
             df = self.add_weekday(df, timestamp_column)
+
+            # Step 8: Add Month output
+            self.logger.info("Adding Month information.")
+            df = self.add_month(df, timestamp_column)
+
+            # Step 8: Add Month output
+            self.logger.info("Adding Year information.")
+            df = self.add_year(df, timestamp_column)
 
             self.logger.info("Preprocessing pipeline completed successfully.")
             return df

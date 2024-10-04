@@ -72,7 +72,37 @@ class TestDataPreprocessing(unittest.TestCase):
         pd.testing.assert_frame_equal(actual_output, expected_output)
 
     def test_extract_end_location(self):
-        pass
+        # Input DataFrame with 2 polylines
+        data = {
+            "POLYLINE": [
+                [[-8.618643, 41.141412], [-8.618499, 41.141376]],
+                [[-8.618300, 41.141200], [-8.618100, 41.141100]],
+            ]
+        }
+        df = pd.DataFrame(data)
+
+        # Call the method to test
+        actual_output = self.data_preprocessor.extract_end_location(df)
+
+        # Define the expected output DataFrame
+        expected_data = {
+            "POLYLINE": [
+                [[-8.618643, 41.141412], [-8.618499, 41.141376]],
+                [[-8.618300, 41.141200], [-8.618100, 41.141100]],
+            ],
+            "END": [
+                [-8.618499, 41.141376],
+                [-8.618100, 41.141100],
+            ],
+        }
+        expected_output = pd.DataFrame(expected_data)
+
+        # Reset index to ensure alignment
+        actual_output = actual_output.reset_index(drop=True)
+        expected_output = expected_output.reset_index(drop=True)
+
+        # Assert that the actual output matches the expected output
+        pd.testing.assert_frame_equal(actual_output, expected_output)
 
     def test_safe_convert_string_to_list(self):
         # Input DataFrame with POLYLINE as string representations of lists

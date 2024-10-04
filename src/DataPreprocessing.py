@@ -1,12 +1,15 @@
 import numpy as np
 import pandas as pd
 import ast
+import logging
 from typing import Optional, Tuple
 
 
 class DataPreprocessing:
-    def __init__(self) -> None:
-        pass
+    def __init__(self):
+        # Configure logging
+        logging.basicConfig(level=logging.INFO)
+        self.logger = logging.getLogger(__name__)
 
     def remove_missing_gps(
         self,
@@ -153,7 +156,7 @@ class DataPreprocessing:
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
     ) -> pd.DataFrame:
         """
-        Extracts the last coordinate pair from the specified polyline column and adds it as a new 'start' column.
+        Extracts the last coordinate pair from the specified polyline column and adds it as a new 'end' column.
 
         Args:
             df (pd.DataFrame): The input DataFrame containing the polyline data.
@@ -218,7 +221,7 @@ class DataPreprocessing:
         missing_flag: bool = True,
         timestamp_column: str = "TIMESTAMP",
         polyline_column: str = "POLYLINE",
-    ) -> Tuple[pd.DataFrame, Optional[Tuple]]:
+    ) -> pd.DataFrame:
         """
         Apply a series of preprocessing steps to the DataFrame:
         1. Remove rows with missing GPS data.
@@ -227,10 +230,9 @@ class DataPreprocessing:
         4. Convert Polyline column to list
         5. Extract start location from Polyline column
         6. Extract end location from Polyline column
-        TODO: Add weekday output
+        7. Add weekday output
 
-
-        Parameters:
+        Parameters
         ----------
         df : pd.DataFrame
             The input DataFrame to preprocess.
@@ -242,34 +244,49 @@ class DataPreprocessing:
             The column containing UNIX timestamps (default is "TIMESTAMP").
         polyline_column : str, optional
             The column containing polyline data (default is "POLYLINE").
-        convert_polyline : bool, optional
-            Whether to convert POLYLINE from list-like to string (default is True).
 
-
-        Returns:
+        Returns
         -------
         pd.DataFrame
-
+            The preprocessed DataFrame.
         """
-        # Step 1: Remove rows with missing GPS data
-        df = self.remove_missing_gps(df, missing_data_column, missing_flag)
+        try:
+            self.logger.info("Starting preprocessing pipeline.")
 
-        # Step 2: Convert UNIX timestamps to datetime
-        df = self.convert_timestamp(df, timestamp_column)
+            # Step 1: Remove rows with missing GPS data
+            self.logger.info("Removing rows with missing GPS data.")
+            df = self.remove_missing_gps(df, missing_data_column, missing_flag)
 
-        # Step 3: Calculate travel time
-        df = self.calculate_travel_time_fifteen_seconds(df, polyline_column)
+            # Step 2: Convert UNIX timestamps to datetime
+            self.logger.info("Converting UNIX timestamps to datetime objects.")
+            df = self.convert_timestamp(df, timestamp_column)
 
-        # Step 4 Extract start polyline locations
-        df = self.safe_convert_string_to_list(df, polyline_column)
+            # Step 3: Calculate travel time
+            self.logger.info("Calculating travel time.")
+            df = self.calculate_travel_time_fifteen_seconds(df, polyline_column)
 
-        # Step 5 Extract start polyline locations
-        df = self.extract_start_location(df, polyline_column)
+            # Step 4: Convert Polyline column from string to list
+            self.logger.info("Converting Polyline column from string to list.")
+            df = self.safe_convert_string_to_list(df, polyline_column)
 
-        # Step 6 Extract end polyline location
-        df = self.extract_end_location(df, polyline_column)
+            # Step 5: Extract start location from Polyline column
+            self.logger.info("Extracting start locations from Polyline column.")
+            df = self.extract_start_location(df, polyline_column)
 
-        return df
+            # Step 6: Extract end location from Polyline column
+            self.logger.info("Extracting end locations from Polyline column.")
+            df = self.extract_end_location(df, polyline_column)
+
+            # Step 7: Add weekday output
+            self.logger.info("Adding weekday information.")
+            df = self.add_weekday(df, timestamp_column)
+
+            self.logger.info("Preprocessing pipeline completed successfully.")
+            return df
+
+        except Exception as e:
+            self.logger.error(f"An error occurred during preprocessing: {e}")
+            raise
 
 
 if __name__ == "__main__":

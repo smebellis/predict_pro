@@ -21,6 +21,18 @@ class TestDataPreprocessing(unittest.TestCase):
         expected_df = pd.DataFrame({"MISSING_DATA": [False, False, False]})
         pd.testing.assert_frame_equal(cleaned_df, expected_df)
 
+    def test_remove_nan(self):
+        """Test dropping NaN with default parameters (drop_na=True, inplace=False)."""
+        data = {"NAN_DATA": ["1", "2", None, "3"]}
+        df = pd.DataFrame(data)
+
+        actual_df = self.data_preprocessor.drop_nan(df)
+        expected_df = pd.DataFrame({"NAN_DATA": ["1", "2", "3"]})
+
+        pd.testing.assert_frame_equal(actual_df, expected_df)
+        # Ensure original DataFrame is unchanged
+        self.assertTrue(df.isnull().any().any())
+
     def test_convert_timestamp(self):
         data = {
             "TIMESTAMP": [1672024955, 357223268, 1286429319, 1217817752, 1057457493]

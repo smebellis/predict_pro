@@ -509,6 +509,51 @@ class DataPreprocessing:
             logging.error(f"An error occurred while saving the file: {e}")
             raise
 
+    def drop_nan(
+        self,
+        df: pd.DataFrame,
+        drop_na: bool = True,
+        inplace: bool = False,
+    ) -> pd.DataFrame:
+        """
+        Cleans the input DataFrame by handling missing data.
+
+        Args:
+            df (pd.DataFrame): The DataFrame to clean.
+            drop_na (bool, optional): Whether to drop rows containing NaN values. Defaults to True.
+            inplace (bool, optional): Whether to perform operations in place. Defaults to False.
+
+        Returns:
+            pd.DataFrame: The cleaned DataFrame.
+
+        Raises:
+            TypeError: If the input is not a pandas DataFrame.
+        """
+        if not isinstance(df, pd.DataFrame):
+            logging.error("Input is not a pandas DataFrame.")
+            raise TypeError("Input must be a pandas DataFrame.")
+
+        if inplace:
+            if drop_na:
+                initial_shape = df.shape
+                df.dropna(inplace=True)
+                df.reset_index(drop=True, inplace=True)
+                final_shape = df.shape
+                dropped_nan = initial_shape[0] - final_shape[0]
+                logging.info(f"Dropped {dropped_nan} rows containing NaN values.")
+            return df
+        else:
+            df_nan = df.copy()
+
+            if drop_na:
+                initial_shape = df_nan.shape
+                df_nan = df_nan.dropna().reset_index(drop=True)
+                final_shape = df_nan.shape
+                dropped_nan = initial_shape[0] - final_shape[0]
+                logging.info(f"Dropped {dropped_nan} rows containing NaN values.")
+
+            return df_nan
+
     def preprocess(
         self,
         df: pd.DataFrame,
@@ -517,9 +562,12 @@ class DataPreprocessing:
         timestamp_column: str = "TIMESTAMP",
         polyline_column: str = "POLYLINE",
         travel_time_column: str = "TRAVEL_TIME",
+        drop_na: bool = False,
+        inplace: bool = False,
     ) -> pd.DataFrame:
         """
         Apply a series of preprocessing steps to the DataFrame:
+        0. Drop duplicates
         1. Remove rows with missing GPS data.
         2. Convert UNIX timestamps to datetime objects.
         3. Calculate travel time based on polyline data.
@@ -536,6 +584,10 @@ class DataPreprocessing:
         ----------
         df : pd.DataFrame
             The input DataFrame to preprocess.
+        drop_na: bool = True
+            The flag value that indicates drop the NaN columns
+        inplace: bool = False
+            The flag that indicates drop in place without modifying the dataframe
         missing_data_column : str, optional
             The column indicating missing data (default is "MISSING_DATA").
         missing_flag : bool, optional
@@ -556,6 +608,10 @@ class DataPreprocessing:
         """
         try:
             self.logger.info("Starting preprocessing pipeline.")
+
+            # Step 0: Remove rows with NaN data
+            self.logger.info("Removing rows with NaN data")
+            df = self.drop_nan(df, drop_na=drop_na)
 
             # Step 1: Remove rows with missing GPS data
             self.logger.info("Removing rows with missing GPS data.")

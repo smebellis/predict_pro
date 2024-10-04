@@ -1,7 +1,7 @@
 import numpy as np
 import pandas as pd
 import ast
-from typing import Optional
+from typing import Optional, Tuple
 
 
 class DataPreprocessing:
@@ -84,33 +84,6 @@ class DataPreprocessing:
 
         return df
 
-    def extract_polyline(
-        self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
-    ) -> pd.DataFrame:
-        """
-        Extracts the start and end POLYLINE locations from the DataFrame.
-
-        Parameters:
-        ----------
-        df : pd.DataFrame
-            The input DataFrame with a 'POLYLINE' column.
-
-        Returns:
-        -------
-        tuple:
-            (start_location, end_location)
-        """
-        if polyline_column not in df.columns:
-            raise ValueError(
-                f"The DataFrame does not contain the '{polyline_column}' column."
-            )
-        if df.empty:
-            raise IndexError("Cannot extract POLYLINE from an empty DataFrame.")
-        start_location = df.iloc[0]["POLYLINE"]
-        end_location = df.iloc[-1]["POLYLINE"]
-
-        return start_location, end_location
-
     def calculate_travel_time_fifteen_seconds(
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
     ) -> pd.DataFrame:
@@ -146,39 +119,162 @@ class DataPreprocessing:
     def extract_start_location(
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
     ) -> pd.DataFrame:
-        pass
+        """
+        Extracts the first coordinate pair from the specified polyline column and adds it as a new 'start' column.
+
+        Args:
+            df (pd.DataFrame): The input DataFrame containing the polyline data.
+            polyline_column (str): The name of the column containing polylines.
+
+        Returns:
+            pd.DataFrame: A new DataFrame with an added 'start' column containing the first coordinate pair.
+
+        Raises:
+            ValueError: If the specified polyline column does not exist in the DataFrame.
+        """
+        if polyline_column not in df.columns:
+            raise ValueError(
+                f"The DataFrame does not contain the '{polyline_column}' column."
+            )
+
+        if df.empty:
+            raise IndexError(
+                "The input DataFrame is empty. Returning the DataFrame as is."
+            )
+
+        df["START"] = [
+            poly[0] if isinstance(poly, list) and len(poly) > 0 else None
+            for poly in df["POLYLINE"]
+        ]
+
+        return df
 
     def extract_end_location(
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
     ) -> pd.DataFrame:
-        pass
-
-    def safe_convert_string_to_list(self, polyline_str: str) -> Optional[list]:
         """
-        Safely converts a string representation of a list into an actual Python list.
+        Extracts the last coordinate pair from the specified polyline column and adds it as a new 'start' column.
+
+        Args:
+            df (pd.DataFrame): The input DataFrame containing the polyline data.
+            polyline_column (str): The name of the column containing polylines.
+
+        Returns:
+            pd.DataFrame: A new DataFrame with an added 'END' column containing the first coordinate pair.
+
+        Raises:
+            ValueError: If the specified polyline column does not exist in the DataFrame.
+        """
+        if polyline_column not in df.columns:
+            raise ValueError(
+                f"The DataFrame does not contain the '{polyline_column}' column."
+            )
+
+        if df.empty:
+            raise IndexError(
+                "The input DataFrame is empty. Returning the DataFrame as is."
+            )
+
+        df["END"] = [
+            poly[-1] if isinstance(poly, list) and len(poly) > 0 else None
+            for poly in df["POLYLINE"]
+        ]
+
+        return df
+
+    def safe_convert_string_to_list(
+        self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
+    ) -> Optional[list]:
+        """
+        Converts string representations of lists in the specified column to actual lists.
+
+        Args:
+            df (pd.DataFrame): The input DataFrame.
+            polyline_column (str): The column containing string representations of lists.
+
+        Returns:
+            Optional[pd.DataFrame]: The DataFrame with the specified column converted to lists.
+
+        Raises:
+            ValueError: If the specified column does not exist.
+            IndexError: If the DataFrame is empty.
+            ValueError: If a cell in the specified column cannot be parsed.
+        """
+        if polyline_column not in df.columns:
+            raise ValueError(
+                f"The DataFrame does not contain the '{polyline_column}' column."
+            )
+        if df.empty:
+            raise IndexError("Cannot extract travel time from an empty DataFrame.")
+        # Make a copy to avoid modifying the original DataFrame
+        df_converted = df.copy()
+        df_converted["POLYLINE"] = df_converted[polyline_column].apply(ast.literal_eval)
+        return df_converted
+
+    def preprocess(
+        self,
+        df: pd.DataFrame,
+        missing_data_column: str = "MISSING_DATA",
+        missing_flag: bool = True,
+        timestamp_column: str = "TIMESTAMP",
+        polyline_column: str = "POLYLINE",
+    ) -> Tuple[pd.DataFrame, Optional[Tuple]]:
+        """
+        Apply a series of preprocessing steps to the DataFrame:
+        1. Remove rows with missing GPS data.
+        2. Convert UNIX timestamps to datetime objects.
+        3. Calculate travel time based on polyline data.
+        4. Convert Polyline column to list
+        5. Extract start location from Polyline column
+        6. Extract end location from Polyline column
+        TODO: Add weekday output
+
 
         Parameters:
         ----------
-        polyline_str : str
-            The string to convert.
+        df : pd.DataFrame
+            The input DataFrame to preprocess.
+        missing_data_column : str, optional
+            The column indicating missing data (default is "MISSING_DATA").
+        missing_flag : bool, optional
+            The flag value that indicates missing data (default is True).
+        timestamp_column : str, optional
+            The column containing UNIX timestamps (default is "TIMESTAMP").
+        polyline_column : str, optional
+            The column containing polyline data (default is "POLYLINE").
+        convert_polyline : bool, optional
+            Whether to convert POLYLINE from list-like to string (default is True).
+
 
         Returns:
         -------
-        list or None
-            The converted list if successful; otherwise, None.
-        """
-        try:
-            return ast.literal_eval(polyline_str)
-        except (ValueError, SyntaxError):
-            return None
+        pd.DataFrame
 
-    def preprocess(self):
-        self.remove_missing_gps()
+        """
+        # Step 1: Remove rows with missing GPS data
+        df = self.remove_missing_gps(df, missing_data_column, missing_flag)
+
+        # Step 2: Convert UNIX timestamps to datetime
+        df = self.convert_timestamp(df, timestamp_column)
+
+        # Step 3: Calculate travel time
+        df = self.calculate_travel_time_fifteen_seconds(df, polyline_column)
+
+        # Step 4 Extract start polyline locations
+        df = self.safe_convert_string_to_list(df, polyline_column)
+
+        # Step 5 Extract start polyline locations
+        df = self.extract_start_location(df, polyline_column)
+
+        # Step 6 Extract end polyline location
+        df = self.extract_end_location(df, polyline_column)
+
+        return df
 
 
 if __name__ == "__main__":
     data = "/home/smebellis/ece5831_final_project/data/train.csv"
     df = pd.read_csv(data, nrows=50000)
     dp = DataPreprocessing()
-
+    df = dp.preprocess(df)
     breakpoint()

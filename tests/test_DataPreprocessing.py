@@ -38,55 +38,66 @@ class TestDataPreprocessing(unittest.TestCase):
 
         pd.testing.assert_frame_equal(actual_df, expected_df)
 
-    def test_extract_polyline(self):
+    def test_extract_start_location(self):
+        # Input DataFrame with 2 polylines
         data = {
             "POLYLINE": [
-                [-8.639847, 41.159826],
-                [-8.640351, 41.159871],
-                [-8.642196, 41.160114],
-                [-8.644455, 41.160492],
-                [-8.646921, 41.160951],
-                [-8.649999, 41.161491],
-                [-8.653167, 41.162031],
-                [-8.656434, 41.16258],
-                [-8.660178, 41.163192],
-                [-8.663112, 41.163687],
-                [-8.666235, 41.1642],
-                [-8.669169, 41.164704],
-                [-8.670852, 41.165136],
-                [-8.670942, 41.166576],
-                [-8.66961, 41.167962],
-                [-8.668098, 41.168988],
-                [-8.66664, 41.170005],
-                [-8.665767, 41.170635],
-                [-8.66574, 41.170671],
+                [[-8.618643, 41.141412], [-8.618499, 41.141376]],
+                [[-8.618300, 41.141200], [-8.618100, 41.141100]],
             ]
         }
         df = pd.DataFrame(data)
 
-    def test_extract_start_location(self):
-        pass
+        # Call the method to test
+        actual_output = self.data_preprocessor.extract_start_location(df)
+
+        # Define the expected output DataFrame
+        expected_data = {
+            "POLYLINE": [
+                [[-8.618643, 41.141412], [-8.618499, 41.141376]],
+                [[-8.618300, 41.141200], [-8.618100, 41.141100]],
+            ],
+            "START": [
+                [-8.618643, 41.141412],
+                [-8.618300, 41.141200],
+            ],
+        }
+        expected_output = pd.DataFrame(expected_data)
+
+        # Reset index to ensure alignment
+        actual_output = actual_output.reset_index(drop=True)
+        expected_output = expected_output.reset_index(drop=True)
+
+        # Assert that the actual output matches the expected output
+        pd.testing.assert_frame_equal(actual_output, expected_output)
 
     def test_extract_end_location(self):
         pass
 
     def test_safe_convert_string_to_list(self):
-        """Test that valid list strings are correctly converted to lists."""
-        self.assertEqual(
-            self.data_preprocessor.safe_convert_string_to_list("[1, 2, 3]"), [1, 2, 3]
-        )
-        self.assertEqual(
-            self.data_preprocessor.safe_convert_string_to_list("['A', 'B', 'C']"),
-            ["A", "B", "C"],
-        )
-        self.assertEqual(
-            self.data_preprocessor.safe_convert_string_to_list("[True, False, True]"),
-            [True, False, True],
-        )
-        self.assertEqual(
-            self.data_preprocessor.safe_convert_string_to_list("[1.1, 2.2, 3.3]"),
-            [1.1, 2.2, 3.3],
-        )
+        # Input DataFrame with POLYLINE as string representations of lists
+        data = {
+            "POLYLINE": [
+                "[[-8.618643, 41.141412], [-8.618499, 41.141376]]",
+                "[[-8.618300, 41.141200], [-8.618100, 41.141100]]",
+            ]
+        }
+        df = pd.DataFrame(data)
+
+        # Call the method to test
+        actual_output = self.data_preprocessor.safe_convert_string_to_list(df)
+
+        # Define the expected output as a DataFrame with actual lists
+        expected_data = {
+            "POLYLINE": [
+                [[-8.618643, 41.141412], [-8.618499, 41.141376]],
+                [[-8.618300, 41.141200], [-8.618100, 41.141100]],
+            ]
+        }
+        expected_output = pd.DataFrame(expected_data)
+
+        # Use assert_frame_equal to compare the actual and expected DataFrames
+        pd.testing.assert_frame_equal(actual_output, expected_output)
 
     def test_calculate_travel_time_fifteen_seconds(self):
         data = {

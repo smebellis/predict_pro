@@ -554,6 +554,55 @@ class DataPreprocessing:
 
             return df_nan
 
+    def drop_columns(
+        self, df: pd.DataFrame, columns_to_drop: list = None
+    ) -> pd.DataFrame:
+        """
+        Drops the specified columns from the DataFrame.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame from which columns will be dropped.
+        columns_to_drop : list, optional
+            A list of column names to drop. If not provided, defaults to ["ORIGIN_CALL", "ORIGIN_STAND"].
+
+        Returns:
+        -------
+        pd.DataFrame
+            A new DataFrame with the specified columns removed.
+
+        Raises:
+        ------
+        ValueError
+            If the input DataFrame is empty.
+        """
+
+        if columns_to_drop is None:
+            columns_to_drop = ["ORIGIN_CALL", "ORIGIN_STAND"]
+        if df.empty:
+            raise ValueError("The input DataFrame is empty. Cannot drop columns.")
+        if columns_to_drop is not None and not isinstance(columns_to_drop, list):
+            self.logger.error("columns_to_drop is not a list.")
+            raise TypeError("columns_to_drop must be a list of column names.")
+
+        # Drop columns if they exist; ignore otherwise
+        dropped_df = df.drop(columns=columns_to_drop, errors="ignore")
+
+        return dropped_df
+
+    def extract_coordinates(self, df: pd.DataFrame) -> pd.DataFrame:
+        coordinate_df = df.copy()
+
+        # Convert the column to a list
+        lat_long_df = pd.DataFrame(coordinate_df["START"].tolist(), index=df.index)
+        # Rename the columns
+        lat_long_df.columns = ["START_LONG", "START_LAT"]
+
+        coordinate_df = coordinate_df.join(lat_long_df)
+
+        return coordinate_df
+
     def preprocess(
         self,
         df: pd.DataFrame,
@@ -609,13 +658,17 @@ class DataPreprocessing:
         try:
             self.logger.info("Starting preprocessing pipeline.")
 
-            # Step 0: Remove rows with NaN data
-            self.logger.info("Removing rows with NaN data")
-            df = self.drop_nan(df, drop_na=drop_na)
-
             # Step 1: Remove rows with missing GPS data
             self.logger.info("Removing rows with missing GPS data.")
             df = self.remove_missing_gps(df, missing_data_column, missing_flag)
+
+            # Step XX: Drop Columns
+            self.logger.info("Removing Columns from DataFrame")
+            df = self.drop_columns(df)
+
+            # Step XX: Remove NaN objects from DataFrame
+            self.logger.info("Removing rows with NaN data")
+            df = self.drop_nan(df, drop_na=drop_na)
 
             # Step 2: Convert UNIX timestamps to datetime
             self.logger.info("Converting UNIX timestamps to datetime objects.")
@@ -636,6 +689,10 @@ class DataPreprocessing:
             # Step 6: Extract end location from Polyline column
             self.logger.info("Extracting end locations from Polyline column.")
             df = self.extract_end_location(df, polyline_column)
+
+            # Stemp XX: Extract Lat Long Coordinates
+            self.logger.info("Extracting Lat/Long Coordinates")
+            df = self.extract_coordinates(df)
 
             # Step 6: Extract end location from Polyline column
             self.logger.info("Extracting end time from Starting Time and Travel Time.")

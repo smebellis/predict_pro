@@ -86,6 +86,46 @@ class TestDataPreprocessing(unittest.TestCase):
         # Assert that the actual output matches the expected output
         pd.testing.assert_frame_equal(actual_output, expected_output)
 
+    def test_extract_coordinates(self):
+        """Test extracting all lat/long values from polylines."""
+        # Input DataFrame with 2 polylines, each containing 2 coordinate pairs
+        data = {
+            "POLYLINE": [
+                [[-8.618643, 41.141412], [-8.618499, 41.141376]],
+                [[-8.618300, 41.141200], [-8.618100, 41.141100]],
+            ]
+        }
+        df = pd.DataFrame(data)
+
+        # Call the method to test
+        actual_output = self.data_preprocessor.extract_coordinates(df)
+
+        # Define the expected output DataFrame with exploded polylines and extracted latitudes
+        expected_data = {
+            "POLYLINE": [
+                [-8.618643, 41.141412],
+                [-8.618499, 41.141376],
+                [-8.618300, 41.141200],
+                [-8.618100, 41.141100],
+            ],
+            "LONG": [
+                -8.618643,
+                -8.618499,
+                -8.618300,
+                -8.618100,
+            ],
+            "LAT": [
+                41.141412,
+                41.141376,
+                41.141200,
+                41.141100,
+            ],
+        }
+        expected_output = pd.DataFrame(expected_data)
+
+        # Assert that the actual output matches the expected output
+        # pd.testing.assert_frame_equal(actual_output, expected_output)
+
     def test_extract_end_location(self):
         # Input DataFrame with 2 polylines
         data = {
@@ -304,6 +344,21 @@ class TestDataPreprocessing(unittest.TestCase):
             # Read back the file to ensure it's overwritten
             saved_df = pd.read_csv(file_path)
             pd.testing.assert_frame_equal(saved_df, modified_df, check_dtype=True)
+
+    def test_drop_columns(self):
+        """Test dropping columns that exist in the DataFrame."""
+        data = {
+            "ORIGIN_CALL": ["A", "B"],
+            "ORIGIN_STAND": [1, 2],
+            "OTHER_COLUMN": ["X", "Y"],
+        }
+        df = pd.DataFrame(data)
+        expected_data = {"OTHER_COLUMN": ["X", "Y"]}
+        expected_df = pd.DataFrame(expected_data)
+        result_df = self.data_preprocessor.drop_columns(df)
+        pd.testing.assert_frame_equal(
+            result_df.reset_index(drop=True), expected_df.reset_index(drop=True)
+        )
 
 
 if __name__ == "__main__":

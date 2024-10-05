@@ -1,8 +1,9 @@
 import logging
 import os
 from datetime import datetime
-from typing import Union
 from pathlib import Path
+from typing import Dict, Optional, Union
+
 import pandas as pd
 import tqdm
 
@@ -103,6 +104,76 @@ def file_load(file_path: Union[str, Path]) -> pd.DataFrame:
             raise ValueError(
                 f"Unsupported file format: {file_extension}. Supported formats are CSV, Excel, and JSON."
             )
+    except pd.errors.ParserError as e:
+        logging.error(f"Error parsing the file: {file_path} - {e}")
+        raise
+    except Exception as e:
+        logging.error(
+            f"An unexpected error occurred while reading the file: {file_path} - {e}"
+        )
+        raise
+
+    return df
+
+
+def file_load_large_csv(
+    file_path: Union[str, Path],
+    chunksize: int = 100000,
+    **read_csv_kwargs: Optional[Dict],
+) -> pd.DataFrame:
+    """
+    Loads a large CSV file into a pandas DataFrame by reading it in chunks.
+
+    Parameters:
+        file_path (Union[str, Path]): The path to the CSV file to be loaded.
+        chunksize (int, optional): Number of rows per chunk. Default is 100,000.
+        **read_csv_kwargs: Additional keyword arguments to pass to pandas.read_csv.
+
+    Returns:
+        pd.DataFrame: The concatenated DataFrame containing all data from the CSV file.
+
+    Raises:
+        FileNotFoundError: If the specified file does not exist.
+        ValueError: If the file is not a CSV or if no data is read from the file.
+        pd.errors.ParserError: If there's an error parsing the CSV file.
+    """
+    file_path = Path(file_path)
+
+    # Check if file exists
+    if not file_path.exists():
+        logging.error(f"File does not exist: {file_path}")
+        raise FileNotFoundError(
+            f"File does not exist, check the path and try again with the correct path: {file_path}"
+        )
+
+    # Check if file has a .csv extension
+    if file_path.suffix.lower() != ".csv":
+        logging.error(f"Unsupported file format: {file_path.suffix}")
+        raise ValueError(
+            f"Unsupported file format: {file_path.suffix}. Only CSV files are supported."
+        )
+
+    logging.info(
+        f"Starting to read CSV file in chunks: {file_path} with chunksize={chunksize}"
+    )
+
+    chunks = []
+    try:
+        for i, chunk in enumerate(
+            pd.read_csv(file_path, chunksize=chunksize, **read_csv_kwargs)
+        ):
+            logging.debug(f"Processing chunk {i+1}")
+            chunks.append(chunk)
+        if not chunks:
+            logging.warning(f"No data read from the file: {file_path}")
+            raise ValueError(f"No data read from the file: {file_path}")
+        df = pd.concat(chunks, ignore_index=True)
+        logging.info(
+            f"Successfully loaded CSV file: {file_path} with {len(df)} records."
+        )
+    except pd.errors.EmptyDataError:
+        logging.error(f"No data: The file is empty: {file_path}")
+        raise
     except pd.errors.ParserError as e:
         logging.error(f"Error parsing the file: {file_path} - {e}")
         raise

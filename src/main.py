@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 
 from DataPreprocessing import DataPreprocessing
-from utils.helper import setup_logging
+from utils.helper import setup_logging, file_load
 
 
 def parse_arguments():
@@ -19,7 +19,13 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Predict Pro Software to detect Patterns"
     )
-    # Add arguments as needed
+    parser.add_argument(
+        "--data_path",
+        type=str,
+        required=True,
+        default="/home/smebellis/ece5831_final_project/processed_data/update_taxi_trajectory.csv",
+        help="Path to the data file",
+    )
     parser.add_argument(
         "--config",
         type=str,
@@ -56,7 +62,12 @@ def main():
 
     logger.info("Starting the Data Preprocessing Pipeline.")
 
-    #############################################################################
+    ##################
+    # LOAD THE DATA  #
+    ##################
+    logging.info("Loading data...")
+    df = file_load(args.data_path)
+    logging.info("Data loaded successfully.")
 
     # Initialize and run the DataPreprocessor
     preprocessor = DataPreprocessing()

@@ -509,19 +509,13 @@ class DataPreprocessing:
             logging.error(f"An error occurred while saving the file: {e}")
             raise
 
-    def drop_nan(
-        self,
-        df: pd.DataFrame,
-        drop_na: bool = True,
-        inplace: bool = False,
-    ) -> pd.DataFrame:
+    def drop_nan(self, df: pd.DataFrame) -> pd.DataFrame:
         """
         Cleans the input DataFrame by handling missing data.
 
         Args:
             df (pd.DataFrame): The DataFrame to clean.
-            drop_na (bool, optional): Whether to drop rows containing NaN values. Defaults to True.
-            inplace (bool, optional): Whether to perform operations in place. Defaults to False.
+
 
         Returns:
             pd.DataFrame: The cleaned DataFrame.
@@ -529,30 +523,20 @@ class DataPreprocessing:
         Raises:
             TypeError: If the input is not a pandas DataFrame.
         """
+        # Type Validation
         if not isinstance(df, pd.DataFrame):
-            logging.error("Input is not a pandas DataFrame.")
+            self.logger.error("Input is not a pandas DataFrame.")
             raise TypeError("Input must be a pandas DataFrame.")
 
-        if inplace:
-            if drop_na:
-                initial_shape = df.shape
-                df.dropna(inplace=True)
-                df.reset_index(drop=True, inplace=True)
-                final_shape = df.shape
-                dropped_nan = initial_shape[0] - final_shape[0]
-                logging.info(f"Dropped {dropped_nan} rows containing NaN values.")
-            return df
-        else:
-            df_nan = df.copy()
+        self.logger.info("Initiating drop_na operation.")
 
-            if drop_na:
-                initial_shape = df_nan.shape
-                df_nan = df_nan.dropna().reset_index(drop=True)
-                final_shape = df_nan.shape
-                dropped_nan = initial_shape[0] - final_shape[0]
-                logging.info(f"Dropped {dropped_nan} rows containing NaN values.")
+        initial_shape = df.shape
+        df_cleaned = df.dropna().reset_index(drop=True)
+        final_shape = df_cleaned.shape
+        dropped_nan = initial_shape[0] - final_shape[0]
+        self.logger.info(f"Dropped {dropped_nan} rows containing NaN values.")
 
-            return df_nan
+        return df_cleaned
 
     def drop_columns(
         self, df: pd.DataFrame, columns_to_drop: list = None
@@ -591,15 +575,123 @@ class DataPreprocessing:
 
         return dropped_df
 
-    def extract_coordinates(self, df: pd.DataFrame) -> pd.DataFrame:
+    def extract_coordinates(
+        self, df: pd.DataFrame, column: str, columns_to_add: list = None
+    ) -> pd.DataFrame:
+        """
+        Extracts latitude and longitude coordinates from a specified column and adds them as new columns.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame containing the coordinate data.
+        column : str
+            The name of the column containing coordinate pairs (e.g., [LONG, LAT]).
+        columns_to_add : list, optional
+            A list of new column names to add for the extracted coordinates.
+            If not provided, defaults to ["LONG", "LAT"].
+
+        Returns:
+        -------
+        pd.DataFrame
+            A new DataFrame with the extracted coordinate columns added.
+
+        Raises:
+        ------
+        TypeError:
+            If `df` is not a pandas DataFrame.
+            If `column` is not a string.
+            If `columns_to_add` is provided but is not a list of strings.
+        ValueError:
+            If `column` does not exist in `df`.
+            If the data in `column` is not in the expected format.
+            If the length of `columns_to_add` does not match the number of elements in each coordinate pair.
+        """
+        # Type Validation
+        if not isinstance(df, pd.DataFrame):
+            self.logger.error("Input is not a pandas DataFrame.")
+            raise TypeError("Input must be a pandas DataFrame.")
+
+        if not isinstance(column, str):
+            self.logger.error("Parameter 'column' must be a string.")
+            raise TypeError(
+                "Parameter 'column' must be a string representing the column name."
+            )
+
+        if columns_to_add is not None:
+            if not isinstance(columns_to_add, list):
+                self.logger.error(
+                    "Parameter 'columns_to_add' must be a list of strings."
+                )
+                raise TypeError("Parameter 'columns_to_add' must be a list of strings.")
+            if not all(isinstance(col, str) for col in columns_to_add):
+                self.logger.error("All elements in 'columns_to_add' must be strings.")
+                raise TypeError("All elements in 'columns_to_add' must be strings.")
+        else:
+            columns_to_add = ["LONG", "LAT"]
+            self.logger.info(
+                "No 'columns_to_add' provided. Using default ['LONG', 'LAT']."
+            )
+
+        # Check if the specified column exists
+        if column not in df.columns:
+            self.logger.error(
+                f"The specified column '{column}' does not exist in the DataFrame."
+            )
+            raise ValueError(
+                f"The specified column '{column}' does not exist in the DataFrame."
+            )
+
+        self.logger.info(
+            f"Extracting coordinates from column '{column}' and adding columns {columns_to_add}."
+        )
+
+        # Create a copy to maintain immutability
         coordinate_df = df.copy()
 
-        # Convert the column to a list
-        lat_long_df = pd.DataFrame(coordinate_df["START"].tolist(), index=df.index)
-        # Rename the columns
-        lat_long_df.columns = ["START_LONG", "START_LAT"]
+        # Convert the specified column to a list
+        try:
+            coordinates = coordinate_df[column].tolist()
+            self.logger.debug(f"Coordinates extracted: {coordinates}")
+        except Exception as e:
+            self.logger.error(f"Error converting column '{column}' to list: {e}")
+            raise ValueError(f"Error converting column '{column}' to list: {e}")
 
-        coordinate_df = coordinate_df.join(lat_long_df)
+        # Validate the format of the coordinates
+        if not all(
+            isinstance(coord, (list, tuple)) and len(coord) == len(columns_to_add)
+            for coord in coordinates
+        ):
+            self.logger.error(
+                f"All entries in column '{column}' must be lists or tuples of length {len(columns_to_add)}."
+            )
+            raise ValueError(
+                f"All entries in column '{column}' must be lists or tuples of length {len(columns_to_add)}."
+            )
+
+        # Create a DataFrame from the list of coordinates
+        try:
+            lat_long_df = pd.DataFrame(coordinates, index=coordinate_df.index)
+            self.logger.debug(
+                f"Created DataFrame from coordinates: {lat_long_df.head()}"
+            )
+        except Exception as e:
+            self.logger.error(f"Error creating DataFrame from coordinates: {e}")
+            raise ValueError(f"Error creating DataFrame from coordinates: {e}")
+
+        # Assign new column names
+        lat_long_df.columns = columns_to_add
+        self.logger.info(f"Renamed coordinate columns to {columns_to_add}.")
+
+        # Join the new coordinate columns to the original DataFrame
+        try:
+            coordinate_df = coordinate_df.join(lat_long_df)
+            self.logger.info(
+                f"Successfully joined new coordinate columns to the DataFrame."
+            )
+        except Exception as e:
+            self.logger.error(f"Error joining coordinate columns: {e}")
+            raise ValueError(f"Error joining coordinate columns: {e}")
 
         return coordinate_df
 
@@ -611,7 +703,7 @@ class DataPreprocessing:
         timestamp_column: str = "TIMESTAMP",
         polyline_column: str = "POLYLINE",
         travel_time_column: str = "TRAVEL_TIME",
-        drop_na: bool = False,
+        drop_na: bool = True,
         inplace: bool = False,
     ) -> pd.DataFrame:
         """
@@ -666,10 +758,6 @@ class DataPreprocessing:
             self.logger.info("Removing Columns from DataFrame")
             df = self.drop_columns(df)
 
-            # Step XX: Remove NaN objects from DataFrame
-            self.logger.info("Removing rows with NaN data")
-            df = self.drop_nan(df, drop_na=drop_na)
-
             # Step 2: Convert UNIX timestamps to datetime
             self.logger.info("Converting UNIX timestamps to datetime objects.")
             df = self.convert_timestamp(df, timestamp_column)
@@ -690,13 +778,27 @@ class DataPreprocessing:
             self.logger.info("Extracting end locations from Polyline column.")
             df = self.extract_end_location(df, polyline_column)
 
-            # Stemp XX: Extract Lat Long Coordinates
-            self.logger.info("Extracting Lat/Long Coordinates")
-            df = self.extract_coordinates(df)
-
             # Step 6: Extract end location from Polyline column
             self.logger.info("Extracting end time from Starting Time and Travel Time.")
             df = self.calculate_end_time(df, timestamp_column, travel_time_column)
+
+            # Step XX: Remove NaN objects from DataFrame
+            self.logger.info("Removing rows with NaN data")
+            df = self.drop_nan(df)
+
+            # Stemp XX: Extract Lat Long Coordinates
+            coordinate_extractions = [
+                ("START", ["START_LONG", "START_LAT"]),
+                ("END", ["END_LONG", "END_LAT"]),
+                # Add more tuples as needed, e.g.,
+                # ("MIDDLE", ["MIDDLE_LONG", "MIDDLE_LAT"]),
+            ]
+
+            for column, columns_to_add in coordinate_extractions:
+                self.logger.info(
+                    f"Extracting Lat/Long Coordinates from column '{column}'"
+                )
+                df = self.extract_coordinates(df, column, columns_to_add)
 
             # Step 8: Add weekday output
             self.logger.info("Adding weekday information.")

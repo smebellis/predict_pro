@@ -87,44 +87,26 @@ class TestDataPreprocessing(unittest.TestCase):
         pd.testing.assert_frame_equal(actual_output, expected_output)
 
     def test_extract_coordinates(self):
-        """Test extracting all lat/long values from polylines."""
-        # Input DataFrame with 2 polylines, each containing 2 coordinate pairs
+        """Test extracting coordinates with default columns_to_add."""
         data = {
-            "POLYLINE": [
-                [[-8.618643, 41.141412], [-8.618499, 41.141376]],
-                [[-8.618300, 41.141200], [-8.618100, 41.141100]],
-            ]
+            "ID": [1, 2],
+            "LOCATION": [[-8.618643, 41.141412], [-8.618499, 41.141376]],
+            "OTHER_DATA": ["A", "B"],
         }
         df = pd.DataFrame(data)
 
-        # Call the method to test
-        actual_output = self.data_preprocessor.extract_coordinates(df)
-
-        # Define the expected output DataFrame with exploded polylines and extracted latitudes
         expected_data = {
-            "POLYLINE": [
-                [-8.618643, 41.141412],
-                [-8.618499, 41.141376],
-                [-8.618300, 41.141200],
-                [-8.618100, 41.141100],
-            ],
-            "LONG": [
-                -8.618643,
-                -8.618499,
-                -8.618300,
-                -8.618100,
-            ],
-            "LAT": [
-                41.141412,
-                41.141376,
-                41.141200,
-                41.141100,
-            ],
+            "ID": [1, 2],
+            "LOCATION": [[-8.618643, 41.141412], [-8.618499, 41.141376]],
+            "OTHER_DATA": ["A", "B"],
+            "LONG": [-8.618643, -8.618499],
+            "LAT": [41.141412, 41.141376],
         }
-        expected_output = pd.DataFrame(expected_data)
+        expected_df = pd.DataFrame(expected_data)
 
-        # Assert that the actual output matches the expected output
-        # pd.testing.assert_frame_equal(actual_output, expected_output)
+        result_df = self.data_preprocessor.extract_coordinates(df=df, column="LOCATION")
+
+        pd.testing.assert_frame_equal(result_df, expected_df)
 
     def test_extract_end_location(self):
         # Input DataFrame with 2 polylines

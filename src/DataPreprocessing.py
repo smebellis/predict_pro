@@ -8,6 +8,7 @@ from logging.handlers import RotatingFileHandler
 from typing import Optional, Tuple
 from pathlib import Path
 import matplotlib.pyplot as plt
+from dotenv import load_dotenv
 
 
 class DataPreprocessing:
@@ -436,7 +437,11 @@ class DataPreprocessing:
         return end_df
 
     def save_dataframe_if_not_exists(
-        self, df: pd.DataFrame, file_path: str, file_format: str = "csv", **kwargs
+        self,
+        df: pd.DataFrame,
+        file_path: str,
+        file_format: str = "csv",
+        **kwargs,
     ) -> bool:
         """
         Save a DataFrame to a file only if the file does not already exist.
@@ -477,7 +482,11 @@ class DataPreprocessing:
             return False
 
     def save_dataframe_overwrite(
-        self, df: pd.DataFrame, file_path: str, file_format: str = "csv", **kwargs
+        self,
+        df: pd.DataFrame,
+        file_path: str,
+        file_format: str = "csv",
+        **kwargs,
     ) -> None:
         """
         Save a DataFrame to a file, overwriting it if it already exists.

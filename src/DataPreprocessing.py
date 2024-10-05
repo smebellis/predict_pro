@@ -1,22 +1,37 @@
 import numpy as np
 import pandas as pd
 import ast
+import os
+from datetime import datetime
 import logging
 from logging.handlers import RotatingFileHandler
 from typing import Optional, Tuple
 from pathlib import Path
+import matplotlib.pyplot as plt
 
 
 class DataPreprocessing:
-    def __init__(self, log_file: str = "data_preprocessor.log"):
+    def __init__(self, log_dir: str = "logs", log_file: str = "data_preprocessor.log"):
         """
         Initialize the DataPreprocessor with a dedicated logger that logs to both a file and stdout.
+        Logs are stored in a separate directory with date and time appended to the log file name.
 
         Parameters:
         ----------
+        log_dir : str, optional
+            The directory where log files will be stored. Default is 'logs'.
         log_file : str, optional
-            The filename for the log file. Default is 'data_preprocessor.log'.
+            The base filename for the log file. Default is 'data_preprocessor.log'.
         """
+
+        # Ensure the log directory exists
+        os.makedirs(log_dir, exist_ok=True)
+
+        # Append current date and time to the log file name
+        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        log_filename = f"{os.path.splitext(log_file)[0]}_{current_time}{os.path.splitext(log_file)[1]}"
+        log_path = os.path.join(log_dir, log_filename)
+
         self.logger = logging.getLogger("DataPreprocessorLogger")
         self.logger.setLevel(logging.DEBUG)  # Capture all levels of logs
 
@@ -29,7 +44,7 @@ class DataPreprocessing:
 
             # File Handler with Rotation
             file_handler = RotatingFileHandler(
-                log_file,
+                log_path,
                 maxBytes=5 * 1024 * 1024,  # 5 MB
                 backupCount=5,  # Keep up to 5 backup files
             )
@@ -652,7 +667,7 @@ class DataPreprocessing:
         # Convert the specified column to a list
         try:
             coordinates = coordinate_df[column].tolist()
-            self.logger.debug(f"Coordinates extracted: {coordinates}")
+            # self.logger.debug(f"Coordinates extracted: {coordinates}")
         except Exception as e:
             self.logger.error(f"Error converting column '{column}' to list: {e}")
             raise ValueError(f"Error converting column '{column}' to list: {e}")
@@ -672,9 +687,9 @@ class DataPreprocessing:
         # Create a DataFrame from the list of coordinates
         try:
             lat_long_df = pd.DataFrame(coordinates, index=coordinate_df.index)
-            self.logger.debug(
-                f"Created DataFrame from coordinates: {lat_long_df.head()}"
-            )
+            # self.logger.debug(
+            #     f"Created DataFrame from coordinates: {lat_long_df.head()}"
+            # )
         except Exception as e:
             self.logger.error(f"Error creating DataFrame from coordinates: {e}")
             raise ValueError(f"Error creating DataFrame from coordinates: {e}")
@@ -836,4 +851,5 @@ if __name__ == "__main__":
     df = pd.read_csv(data, nrows=50000)
     dp = DataPreprocessing()
     df = dp.preprocess(df)
+
     breakpoint()

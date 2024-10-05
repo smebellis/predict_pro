@@ -4,63 +4,7 @@ import os
 from datetime import datetime
 
 from DataPreprocessing import DataPreprocessing
-
-
-def setup_logging(
-    log_dir: str = "logs", log_file: str = "data_preprocessor.log"
-) -> logging.Logger:
-    """
-    Sets up logging for the application.
-
-    Parameters:
-    ----------
-    log_dir : str
-        Directory to store log files.
-    log_file : str
-        Base name for the log file.
-
-    Returns:
-    -------
-    logger : logging.Logger
-        Configured logger instance.
-    """
-    # Ensure the log directory exists
-    os.makedirs(log_dir, exist_ok=True)
-
-    # Append current date and time to the log file name
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_filename = (
-        f"{os.path.splitext(log_file)[0]}_{current_time}{os.path.splitext(log_file)[1]}"
-    )
-    log_path = os.path.join(log_dir, log_filename)
-
-    logger = logging.getLogger("YourProjectLogger")
-    logger.setLevel(logging.DEBUG)
-
-    if not logger.handlers:
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-        )
-
-        # File Handler with Rotation
-        file_handler = logging.handlers.RotatingFileHandler(
-            log_path,
-            maxBytes=5 * 1024 * 1024,  # 5 MB
-            backupCount=5,
-        )
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(formatter)
-
-        # Stream Handler for stdout
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.INFO)
-        stream_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
-        logger.addHandler(stream_handler)
-
-    logger.debug("Logger initialized and handlers added.")
-    return logger
+from utils.helper import setup_logging
 
 
 def parse_arguments():
@@ -72,7 +16,9 @@ def parse_arguments():
     args : argparse.Namespace
         Parsed command-line arguments.
     """
-    parser = argparse.ArgumentParser(description="Data Preprocessing Pipeline")
+    parser = argparse.ArgumentParser(
+        description="Predict Pro Software to detect Patterns"
+    )
     # Add arguments as needed
     parser.add_argument(
         "--config",
@@ -93,8 +39,11 @@ def parse_arguments():
 
 
 def main():
-    # Parse command-line arguments
-    args = parse_arguments()
+    try:
+        args = parse_arguments()
+    except Exception as e:
+        logging.error(f"Error parsing arguments: {e}")
+        return
 
     # Set up logging
     logger = setup_logging()
@@ -107,9 +56,11 @@ def main():
 
     logger.info("Starting the Data Preprocessing Pipeline.")
 
+    #############################################################################
+
     # Initialize and run the DataPreprocessor
     preprocessor = DataPreprocessing()
-    preprocessor.run_pipeline()
+    df = preprocessor.preprocess(df)
 
     # Initialize and run other modules as needed
     # if args.module == "preprocess":

@@ -1,0 +1,116 @@
+{
+    "Sao Nicolau": {
+        "lower_lat": 41.139357,
+        "upper_lat": 41.143865,
+        "left_long": -8.621299,
+        "right_long": -8.611466
+    },
+    "Se": {
+        "lower_lat": 41.139193,
+        "upper_lat": 41.148208,
+        "left_long": -8.600352,
+        "right_long": -8.611466
+    },
+    "Vitoria": {
+        "lower_lat": 41.144025,
+        "upper_lat": 41.152879,
+        "left_long": -8.611251,
+        "right_long": -8.621298
+    },
+    "Santo Ildefonso": {
+        "lower_lat": 41.148047,
+        "upper_lat": 41.164788,
+        "left_long": -8.60056,
+        "right_long": -8.611249
+    },
+    "Cedofeita": {
+        "lower_lat": 41.152879,
+        "upper_lat": 41.165274,
+        "left_long": -8.611247,
+        "right_long": -8.628137
+    },
+    "Miaragaia": {
+        "lower_lat": 41.14274,
+        "upper_lat": 41.152881,
+        "left_long": -8.621298,
+        "right_long": -8.627924
+    },
+    "Bonfim and Campnha": {
+        "lower_lat": 41.139827,
+        "upper_lat": 41.165101,
+        "left_long": -8.577693,
+        "right_long": -8.600565
+    },
+    "Massarelos": {
+        "lower_lat": 41.14435,
+        "upper_lat": 41.17252,
+        "left_long": -8.627924,
+        "right_long": -8.639681
+    },
+    "Lordelo Do Ouro": {
+        "lower_lat": 41.146765,
+        "upper_lat": 41.172843,
+        "left_long": -8.639467,
+        "right_long": -8.661271
+    },
+    "Foz Do Douro": {
+        "lower_lat": 41.144509,
+        "upper_lat": 41.17284,
+        "left_long": -8.661271,
+        "right_long": -8.703385
+    },
+    "Matosinhos": {
+        "lower_lat": 41.172523,
+        "upper_lat": 41.210809,
+        "left_long": -8.664262,
+        "right_long": -8.732013
+    },
+    "Perafita": {
+        "lower_lat": 41.210875,
+        "upper_lat": 41.262566,
+        "left_long": -8.675873,
+        "right_long": -8.73124
+    },
+    "Maia": {
+        "lower_lat": 41.210921,
+        "upper_lat": 41.262463,
+        "left_long": -8.585343,
+        "right_long": -8.675948
+    },
+    "Ramalde and Aldoar": {
+        "lower_lat": 41.172683,
+        "upper_lat": 41.210647,
+        "left_long": -8.628359,
+        "right_long": -8.664262
+    },
+    "Paranhos": {
+        "lower_lat": 41.164609,
+        "upper_lat": 41.210949,
+        "left_long": -8.577473,
+        "right_long": -8.627925
+    },
+    "Sao Pedro Fins": {
+        "lower_lat": 41.210791,
+        "upper_lat": 41.263121,
+        "left_long": -8.540443,
+        "right_long": -8.58532
+    },
+    "Alfena": {
+        "lower_lat": 41.21103,
+        "upper_lat": 41.262843,
+        "left_long": -8.492282,
+        "right_long": -8.540443
+    },
+    "Corujeiera and Roque": {
+        "lower_lat": 41.140778,
+        "upper_lat": 41.211122,
+        "left_long": -8.491102,
+        "right_long": -8.57768
+    },
+    "Vila Nova De Gaia": {
+        "lower_lat": 41.07919,
+        "upper_lat": 41.136052,
+        "left_long": -8.571571,
+        "right_long": -8.67612
+    }
+}

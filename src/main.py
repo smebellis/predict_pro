@@ -75,13 +75,6 @@ def main():
     preprocessor = DataPreprocessing()
     df = preprocessor.preprocess(df)
 
-    # Initialize and run other modules as needed
-    # if args.module == "preprocess":
-    #     preprocessor.run_pipeline()
-    # elif args.module == "analyze":
-    #     analyzer = OtherClass()
-    #     analyzer.run_analysis()
-
     logger.info("Pipeline execution completed successfully.")
 
 

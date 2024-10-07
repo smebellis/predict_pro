@@ -209,7 +209,7 @@ class DataPreprocessing:
 
         start_df["START"] = [
             poly[0] if isinstance(poly, list) and len(poly) > 0 else None
-            for poly in df["POLYLINE"]
+            for poly in df["POLYLINE_LIST"]
         ]
 
         return start_df
@@ -244,7 +244,7 @@ class DataPreprocessing:
 
         end_df["END"] = [
             poly[-1] if isinstance(poly, list) and len(poly) > 0 else None
-            for poly in df["POLYLINE"]
+            for poly in df["POLYLINE_LIST"]
         ]
 
         return end_df
@@ -275,7 +275,9 @@ class DataPreprocessing:
             raise IndexError("Cannot extract travel time from an empty DataFrame.")
         # Make a copy to avoid modifying the original DataFrame
         df_converted = df.copy()
-        df_converted["POLYLINE"] = df_converted[polyline_column].apply(ast.literal_eval)
+        df_converted["POLYLINE_LIST"] = df_converted[polyline_column].apply(
+            ast.literal_eval
+        )
         return df_converted
 
     def add_weekday(
@@ -726,6 +728,7 @@ class DataPreprocessing:
         missing_flag: bool = True,
         timestamp_column: str = "TIMESTAMP",
         polyline_column: str = "POLYLINE",
+        polyline_list_column: str = "POLYLINE_LIST",
         travel_time_column: str = "TRAVEL_TIME",
         drop_na: bool = True,
         inplace: bool = False,
@@ -796,11 +799,11 @@ class DataPreprocessing:
 
             # Step 5: Extract start location from Polyline column
             self.logger.info("Extracting start locations from Polyline column.")
-            df = self.extract_start_location(df, polyline_column)
+            df = self.extract_start_location(df, polyline_list_column)
 
             # Step 6: Extract end location from Polyline column
             self.logger.info("Extracting end locations from Polyline column.")
-            df = self.extract_end_location(df, polyline_column)
+            df = self.extract_end_location(df, polyline_list_column)
 
             # Step 6: Extract end location from Polyline column
             self.logger.info("Extracting end time from Starting Time and Travel Time.")
@@ -814,8 +817,6 @@ class DataPreprocessing:
             coordinate_extractions = [
                 ("START", ["START_LONG", "START_LAT"]),
                 ("END", ["END_LONG", "END_LAT"]),
-                # Add more tuples as needed, e.g.,
-                # ("MIDDLE", ["MIDDLE_LONG", "MIDDLE_LAT"]),
             ]
 
             for column, columns_to_add in coordinate_extractions:
@@ -837,7 +838,7 @@ class DataPreprocessing:
             df = self.add_year(df, timestamp_column)
 
             # Step 11: Save the DataFrame to a CSV file only if it doesn't exist
-            file_path = "processed_data/update_taxi_trajectory.csv"
+            file_path = "processed_data/update_taxi_trajectory1.csv"
             was_saved = self.save_dataframe_if_not_exists(
                 df, file_path, file_format="csv"
             )

@@ -3,6 +3,7 @@ import os
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Union
+import argparse
 
 import pandas as pd
 import tqdm
@@ -63,6 +64,40 @@ def setup_logging(
 
     logger.debug("Logger initialized and handlers added.")
     return logger
+
+
+def parse_arguments():
+    """
+    Parses command-line arguments.
+
+    Returns:
+    -------
+    args : argparse.Namespace
+        Parsed command-line arguments.
+    """
+    parser = argparse.ArgumentParser(
+        description="Predict Pro Software to detect Patterns"
+    )
+    parser.add_argument(
+        "--data_path",
+        type=str,
+        required=True,
+        default="/home/smebellis/ece5831_final_project/processed_data/update_taxi_trajectory.csv",
+        help="Path to the data file",
+    )
+    # parser.add_argument("--input", required=False, help="Path to the input CSV file.")
+    parser.add_argument(
+        "--output", required=False, help="Path to save the processed CSV file."
+    )
+    parser.add_argument(
+        "--config",
+        type=str,
+        default="config.yaml",
+        help="Path to the configuration file.",
+    )
+    parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
+
+    return parser.parse_args()
 
 
 def file_load(file_path: Union[str, Path]) -> pd.DataFrame:
@@ -184,3 +219,100 @@ def file_load_large_csv(
         raise
 
     return df
+
+
+def save_dataframe_if_not_exists(
+    df: pd.DataFrame,
+    file_path: str,
+    file_format: str = "csv",
+    **kwargs,
+) -> bool:
+    """
+    Save a DataFrame to a file only if the file does not already exist.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        The DataFrame to save.
+    file_path : str
+        The path to the file where the DataFrame should be saved.
+    file_format : str, optional
+        The format to save the DataFrame in (e.g., 'csv', 'excel'). Default is 'csv'.
+    kwargs :
+        Additional keyword arguments to pass to the pandas saving method.
+
+    Returns:
+    -------
+    bool
+        True if the file was saved, False if it already exists.
+    """
+    path = Path(file_path)
+    if not path.exists():
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        if file_format.lower() == "csv":
+            df.to_csv(path, index=False, **kwargs)
+        elif file_format.lower() in ["xls", "xlsx"]:
+            df.to_excel(path, index=False, **kwargs)
+        elif file_format.lower() == "json":
+            df.to_json(path, **kwargs)
+        else:
+            logging.error(f"Unsupported file format: {file_format}")
+            raise ValueError(f"Unsupported file format: {file_format}")
+
+        return True
+    else:
+
+        return False
+
+
+def save_dataframe_overwrite(
+    df: pd.DataFrame,
+    file_path: str,
+    file_format: str = "csv",
+    **kwargs,
+) -> None:
+    """
+    Save a DataFrame to a file, overwriting it if it already exists.
+
+    Parameters:
+    ----------
+    df : pd.DataFrame
+        The DataFrame to save.
+    file_path : str
+        The path to the file where the DataFrame should be saved.
+    kwargs :
+        Additional keyword arguments to pass to the pandas saving method.
+
+    Returns:
+    -------
+    None
+    """
+    path = Path(file_path)
+    try:
+        # Create parent directories if they don't exist
+        path.parent.mkdir(parents=True, exist_ok=True)
+
+        # Save based on the specified format
+        if file_format.lower() == "csv":
+            df.to_csv(path, index=False, **kwargs)
+        elif file_format.lower() in ["xls", "xlsx"]:
+            df.to_excel(path, index=False, **kwargs)
+        elif file_format.lower() == "json":
+            df.to_json(path, **kwargs)
+        elif file_format.lower() == "parquet":
+            df.to_parquet(path, index=False, **kwargs)
+        elif file_format.lower() == "feather":
+            df.to_feather(path, **kwargs)
+        elif file_format.lower() == "hdf":
+            df.to_hdf(path, key="df", mode="w", **kwargs)
+        else:
+            raise ValueError(f"Unsupported file format: {file_format}")
+
+        logging.info(f"File saved to {file_path}. (Overwritten if it existed)")
+    except PermissionError:
+        logging.error(f"Permission denied: Cannot write to {file_path}.")
+        raise
+    except Exception as e:
+        logging.error(f"An error occurred while saving the file: {e}")
+        raise

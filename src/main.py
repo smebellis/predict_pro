@@ -1,4 +1,3 @@
-import argparse
 import logging
 import os
 from datetime import datetime
@@ -6,44 +5,8 @@ from dotenv import load_dotenv
 from pathlib import Path
 
 from DataPreprocessing import DataPreprocessing
-from utils.helper import setup_logging, file_load
-
-
-def parse_arguments():
-    """
-    Parses command-line arguments.
-
-    Returns:
-    -------
-    args : argparse.Namespace
-        Parsed command-line arguments.
-    """
-    parser = argparse.ArgumentParser(
-        description="Predict Pro Software to detect Patterns"
-    )
-    parser.add_argument(
-        "--data_path",
-        type=str,
-        required=True,
-        default="/home/smebellis/ece5831_final_project/processed_data/update_taxi_trajectory.csv",
-        help="Path to the data file",
-    )
-    parser.add_argument(
-        "--config",
-        type=str,
-        default="config.yaml",
-        help="Path to the configuration file.",
-    )
-    parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
-    # Example: Choose which module to run
-    # parser.add_argument(
-    #     "--module",
-    #     type=str,
-    #     choices=["preprocess", "analyze"],
-    #     default="preprocess",
-    #     help="Module to execute."
-    # )
-    return parser.parse_args()
+from pipeline import run_preprocessing_pipeline
+from utils.helper import setup_logging, file_load, parse_arguments
 
 
 def main():
@@ -73,8 +36,7 @@ def main():
 
     # Initialize and run the DataPreprocessor
     preprocessor = DataPreprocessing()
-    df = preprocessor.preprocess(df)
-
+    run_preprocessing_pipeline(args.input, args.output)
     logger.info("Pipeline execution completed successfully.")
 
 

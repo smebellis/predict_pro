@@ -27,17 +27,18 @@ def main():
 
     logger.info("Starting the Data Preprocessing Pipeline.")
 
-    ##################
-    # LOAD THE DATA  #
-    ##################
-    logging.info("Loading data...")
-    df = file_load(args.data_path)
-    logging.info("Data loaded successfully.")
-
     # Initialize and run the DataPreprocessor
     preprocessor = DataPreprocessing()
-    run_preprocessing_pipeline(args.input, args.output)
-    logger.info("Pipeline execution completed successfully.")
+
+    # Execute the preprocessing pipeline
+    try:
+        run_preprocessing_pipeline(
+            input_file=args.input, output_file=args.output, preprocessor=preprocessor
+        )
+        logger.info("Pipeline execution completed successfully.")
+    except Exception as e:
+        logger.error(f"Pipeline execution failed: {e}")
+        return
 
 
 if __name__ == "__main__":

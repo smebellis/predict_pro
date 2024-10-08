@@ -37,12 +37,13 @@ def setup_logging(
     )
     log_path = os.path.join(log_dir, log_filename)
 
-    logger = logging.getLogger("YourProjectLogger")
+    logger = logging.getLogger("Predict Pro Logger")
     logger.setLevel(logging.DEBUG)
 
     if not logger.handlers:
         formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
+            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
         )
 
         # File Handler with Rotation
@@ -78,16 +79,16 @@ def parse_arguments():
     parser = argparse.ArgumentParser(
         description="Predict Pro Software to detect Patterns"
     )
+
     parser.add_argument(
-        "--data_path",
+        "--input",
+        "-i",
         type=str,
-        required=True,
-        default="/home/smebellis/ece5831_final_project/processed_data/update_taxi_trajectory.csv",
-        help="Path to the data file",
+        required=False,
+        help="Path to the data input CSV file. This is the original unformatted data",
     )
-    # parser.add_argument("--input", required=False, help="Path to the input CSV file.")
     parser.add_argument(
-        "--output", required=False, help="Path to save the processed CSV file."
+        "--output", "-o", required=False, help="Path to save the processed CSV file."
     )
     parser.add_argument(
         "--config",

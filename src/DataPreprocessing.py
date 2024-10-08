@@ -1,14 +1,19 @@
-import numpy as np
-import pandas as pd
 import ast
+import logging
 import os
 from datetime import datetime
-import logging
 from logging.handlers import RotatingFileHandler
-from typing import Optional, Tuple
 from pathlib import Path
+from typing import Optional, Tuple
+
 import matplotlib.pyplot as plt
+import numpy as np
+import pandas as pd
 from dotenv import load_dotenv
+from tqdm import tqdm
+
+# Register tqdm with pandas
+tqdm.pandas()
 
 
 class DataPreprocessing:
@@ -275,7 +280,8 @@ class DataPreprocessing:
             raise IndexError("Cannot extract travel time from an empty DataFrame.")
         # Make a copy to avoid modifying the original DataFrame
         df_converted = df.copy()
-        df_converted["POLYLINE_LIST"] = df_converted[polyline_column].apply(
+        tqdm.pandas(desc="Converting POLYLINE to a list")
+        df_converted["POLYLINE_LIST"] = df_converted[polyline_column].progress_apply(
             ast.literal_eval
         )
         return df_converted

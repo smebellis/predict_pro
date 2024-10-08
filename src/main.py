@@ -56,6 +56,9 @@ def main():
     # Initialize and run the DataPreprocessor
     preprocessor = DataPreprocessing(districts=DISTRICTS)
 
+    # TODO: Use the config file.
+    # TODO: Make sure to use the env file to make sure logger puts the logs in the parent directory
+    # TODO: Add an argument to load a smaller sample when loading the original dataset.
     try:
         run_preprocessing_pipeline(
             input_file=args.input,

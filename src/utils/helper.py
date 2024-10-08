@@ -76,20 +76,69 @@ def parse_arguments():
     args : argparse.Namespace
         Parsed command-line arguments.
     """
-    parser = argparse.ArgumentParser(
-        description="Predict Pro Software to detect Patterns"
+
+    parser = argparse.ArgumentParser(description="Run the data preprocessing pipeline.")
+
+    # Required arguments
+    parser.add_argument(
+        "--input", "-i", required=True, help="Path to the input CSV file."
+    )
+    parser.add_argument(
+        "--output", "-o", required=True, help="Path to save the processed CSV file."
+    )
+    parser.add_argument(
+        "--districts_path", required=True, help="Path to the districts JSON file."
     )
 
+    # Optional arguments
     parser.add_argument(
-        "--input",
-        "-i",
-        type=str,
-        required=False,
-        help="Path to the data input CSV file. This is the original unformatted data",
+        "--missing_data_column",
+        default="MISSING_DATA",
+        help="Column indicating missing data.",
     )
     parser.add_argument(
-        "--output", "-o", required=False, help="Path to save the processed CSV file."
+        "--missing_flag",
+        type=bool,
+        default=True,
+        help="Flag value indicating missing data.",
     )
+    parser.add_argument(
+        "--timestamp_column",
+        default="TIMESTAMP",
+        help="Column containing UNIX timestamps.",
+    )
+    parser.add_argument(
+        "--polyline_column", default="POLYLINE", help="Column containing polyline data."
+    )
+    parser.add_argument(
+        "--polyline_list_column",
+        default="POLYLINE_LIST",
+        help="Column to store polyline list.",
+    )
+    parser.add_argument(
+        "--travel_time_column",
+        default="TRAVEL_TIME",
+        help="Column containing travel time.",
+    )
+    parser.add_argument(
+        "--drop_na", type=bool, default=True, help="Flag to drop NaN values."
+    )
+
+    # District Assignment parameters
+    parser.add_argument(
+        "--sample_size",
+        type=int,
+        default=1000,
+        help="Number of records to sample for district assignment.",
+    )
+    parser.add_argument(
+        "--use_sample",
+        type=bool,
+        default=False,
+        help="Whether to use a sample for district assignment.",
+    )
+
+    # Future Use
     parser.add_argument(
         "--config",
         type=str,

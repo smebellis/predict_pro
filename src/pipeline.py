@@ -7,12 +7,14 @@ from utils.helper import (
     parse_arguments,
 )
 import pandas as pd
+from typing import Dict
 
 
 def run_preprocessing_pipeline(
     input_file: str,
     output_file: str,
     preprocessor: DataPreprocessing,
+    district: Dict,
     missing_data_column: str = "MISSING_DATA",
     missing_flag: bool = True,
     timestamp_column: str = "TIMESTAMP",
@@ -74,7 +76,7 @@ def run_preprocessing_pipeline(
     # Load your data
     try:
         logger.info(f"Loading data from {input_file}")
-        df = pd.read_csv(input_file)
+        df = pd.read_csv(input_file)  # add nrows=number to process a smaller sample
         logger.info(f"Loaded data from {input_file}.")
     except FileNotFoundError:
         logger.error(f"Input file {input_file} not found.")
@@ -145,11 +147,24 @@ def run_preprocessing_pipeline(
         logger.info("Adding month information.")
         df = preprocessor.add_month(df, timestamp_column)
 
-        # Step 13: Add year information
+        # Step 13: Load Districts from JSON
+        logger.info("Loading districts from JSON file")
+        district_df = preprocessor.load_districts(districts=district)
+
+        # Step 14: Assign Districts
+        logger.info("Assigning districts to taxi data.")
+        # Choose between sampling and entire dataset
+        df = preprocessor.assign_districts_to_taxi(
+            df, sample_size=1000, use_sample=False
+        )
+        # Or use the vectorized method
+        # df = preprocessor.assign_districts_to_taxi_vectorized(df, sample_size=1000, use_sample=True)
+
+        # Step 15: Add year information
         logger.info("Adding year information.")
         df = preprocessor.add_year(df, timestamp_column)
 
-        # Step 14: Save the processed DataFrame
+        # Step 16: Save the processed DataFrame
         was_saved = save_dataframe_if_not_exists(df, output_file, file_format="csv")
         if was_saved:
             logger.info(f"File saved to {output_file}.")

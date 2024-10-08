@@ -4,7 +4,7 @@ import os
 from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
-from typing import Optional, Tuple
+from typing import Optional, Tuple, Union, Dict
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -15,9 +15,20 @@ from tqdm import tqdm
 # Register tqdm with pandas
 tqdm.pandas()
 
+"""There are methods that can be removed beause I moved them to the 
+pipeline file.  Also, I think this logger setup in the init can be 
+removed.  It is redundant.  I already have a function that sets up a 
+logger.  Ideally the logger will be able to list from where is came from.  
+This is something to add to the Class.  """
+
 
 class DataPreprocessing:
-    def __init__(self, log_dir: str = "logs", log_file: str = "data_preprocessor.log"):
+    def __init__(
+        self,
+        districts: Dict = None,
+        log_dir: str = "logs",
+        log_file: str = "data_preprocessor.log",
+    ):
         """
         Initialize the DataPreprocessor with a dedicated logger that logs to both a file and stdout.
         Logs are stored in a separate directory with date and time appended to the log file name.
@@ -67,6 +78,241 @@ class DataPreprocessing:
             self.logger.addHandler(stream_handler)
 
         self.logger.debug("Logger initialized and handlers added.")
+
+        self.districts_df = self.load_districts(districts) if districts else None
+
+    @staticmethod
+    def haversine(
+        lon1: float,
+        lat1: float,
+        lon2: Union[float, np.ndarray],
+        lat2: Union[float, np.ndarray],
+        unit: str = "km",
+    ) -> Union[float, np.ndarray]:
+        """
+        Calculate the great-circle distance between one point and multiple points on the Earth.
+
+        Parameters:
+        - lon1 (float): Longitude of the first point in decimal degrees.
+        - lat1 (float): Latitude of the first point in decimal degrees.
+        - lon2 (float or np.ndarray): Longitude(s) of the second point(s) in decimal degrees.
+        - lat2 (float or np.ndarray): Latitude(s) of the second point(s) in decimal degrees.
+        - unit (str, optional): Unit of distance ('km', 'miles', 'nmi'). Defaults to 'km'.
+
+        Returns:
+        - float or np.ndarray: Distance(s) between the first point and second point(s) in the specified unit.
+        """
+        # Validate unit
+        units = {"km": 6371.0, "miles": 3956.0, "nmi": 3440.0}
+        if unit not in units:
+            raise ValueError("Unit must be one of 'km', 'miles', or 'nmi'.")
+
+        # Convert decimal degrees to radians
+        lon1_rad, lat1_rad = np.radians(lon1), np.radians(lat1)
+        lon2_rad, lat2_rad = np.radians(lon2), np.radians(lat2)
+
+        # Compute differences
+        dlon = lon2_rad - lon1_rad
+        dlat = lat2_rad - lat1_rad
+
+        # Haversine formula
+        a = (
+            np.sin(dlat / 2.0) ** 2
+            + np.cos(lat1_rad) * np.cos(lat2_rad) * np.sin(dlon / 2.0) ** 2
+        )
+        c = 2 * np.arcsin(np.sqrt(a))
+
+        # Calculate distance
+        distance = c * units[unit]
+
+        return distance
+
+    def load_districts(self, districts: Dict) -> pd.DataFrame:
+        """
+        Convert a districts dictionary to a pandas DataFrame with calculated center coordinates.
+
+        Parameters:
+        - districts (dict): Dictionary containing district boundary information.
+
+        Returns:
+        - pd.DataFrame: Processed DataFrame with district boundaries and center coordinates.
+        """
+        self.logger.debug("Converting districts dictionary to DataFrame.")
+        districts_df = pd.DataFrame.from_dict(districts, orient="index").reset_index()
+        districts_df = districts_df.rename(columns={"index": "DISTRICT_NAME"})
+        districts_df["center_lat"] = (
+            districts_df["lower_lat"] + districts_df["upper_lat"]
+        ) / 2
+        districts_df["center_long"] = (
+            districts_df["left_long"] + districts_df["right_long"]
+        ) / 2
+        self.logger.debug("Calculated center coordinates for districts.")
+        return districts_df
+
+    def assign_district(self, row: pd.Series) -> str:
+        """
+        Assigns a district to a given point.
+
+        Parameters:
+        - row (pd.Series): A row containing 'Long' and 'Lat' for the point.
+
+        Returns:
+        - str: The name of the closest district containing the point or "no district" if none found.
+        """
+        if self.districts_df is None:
+            self.logger.error("Districts data not loaded. Cannot assign district.")
+            return "no district"
+
+        lon, lat = row["Long"], row["Lat"]
+
+        # Correcting the bounding box logic if necessary
+        within_long = (self.districts_df["left_long"] >= lon) & (
+            lon >= self.districts_df["right_long"]
+        )
+        within_lat = (self.districts_df["lower_lat"] <= lat) & (
+            lat <= self.districts_df["upper_lat"]
+        )
+        filtered_districts = self.districts_df[within_long & within_lat]
+
+        if filtered_districts.empty:
+            return "no district"
+
+        # Calculate distances to district centers
+        distances = self.haversine(
+            lon,
+            lat,
+            filtered_districts["center_long"].values,
+            filtered_districts["center_lat"].values,
+        )
+
+        # Find the district with the minimum distance
+        min_distance_idx = np.argmin(distances)
+        closest_district = filtered_districts.iloc[min_distance_idx]["DISTRICT_NAME"]
+
+        self.logger.debug(
+            f"Assigned district '{closest_district}' to point ({lon}, {lat})."
+        )
+        return closest_district
+
+    def assign_districts_to_taxi(
+        self,
+        taxi_df: pd.DataFrame,
+        sample_size: int = 1000,
+        use_sample: bool = True,
+    ) -> pd.DataFrame:
+        """
+        Assign district names to taxi data points using the assign_district function.
+
+        Parameters:
+        - taxi_df (pd.DataFrame): DataFrame containing taxi trajectory data.
+        - sample_size (int, optional): Number of samples to process for testing. Defaults to 1000.
+        - use_sample (bool, optional): Whether to process a sample or the entire dataset. Defaults to True.
+
+        Returns:
+        - pd.DataFrame: Taxi DataFrame with assigned district names.
+        """
+        # Rename columns for consistency
+        taxi_df = taxi_df.rename(columns={"START_LAT": "Lat", "START_LONG": "Long"})
+
+        # Initialize the 'DISTRICT_NAME' column with 'no district'
+        taxi_df["DISTRICT_NAME"] = "no district"
+
+        if use_sample:
+            self.logger.info(f"Sampling {sample_size} records for testing...")
+            processed_df = taxi_df.sample(sample_size, random_state=42).copy()
+
+            # Assign districts using the assign_district function
+            self.logger.debug("Assigning districts to sample data.")
+            tqdm.pandas(desc="Assigning districts to sample data")
+            processed_df["DISTRICT_NAME"] = processed_df.progress_apply(
+                self.assign_district, axis=1
+            )
+
+            self.logger.info("District assignment to sample data completed.")
+            return processed_df
+        else:
+            self.logger.info("Assigning districts to the entire dataset...")
+            tqdm.pandas(desc="Assigning districts to entire data")
+            taxi_df["DISTRICT_NAME"] = taxi_df.progress_apply(
+                self.assign_district, axis=1
+            )
+
+            self.logger.info("District assignment to entire dataset completed.")
+            return taxi_df
+
+    def assign_district_vectorized(self, taxi_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Assign district names to taxi data points using vectorized operations for better performance.
+
+        Parameters:
+        - taxi_df (pd.DataFrame): DataFrame containing taxi trajectory data.
+
+        Returns:
+        - pd.DataFrame: Taxi DataFrame with assigned district names.
+        """
+        if self.districts_df is None:
+            self.logger.error("Districts data not loaded. Cannot assign districts.")
+            taxi_df["DISTRICT_NAME"] = "no district"
+            return taxi_df
+
+        # Initialize 'DISTRICT_NAME' with 'no district'
+        taxi_df["DISTRICT_NAME"] = "no district"
+
+        self.logger.info("Starting vectorized district assignment.")
+        for _, district in tqdm(
+            self.districts_df.iterrows(),
+            total=self.districts_df.shape[0],
+            desc="Assigning districts",
+        ):
+            condition = (
+                (taxi_df["Long"] >= district["left_long"])
+                & (taxi_df["Long"] <= district["right_long"])
+                & (taxi_df["Lat"] >= district["lower_lat"])
+                & (taxi_df["Lat"] <= district["upper_lat"])
+                & (taxi_df["DISTRICT_NAME"] == "no district")  # Prevent overwriting
+            )
+            taxi_df.loc[condition, "DISTRICT_NAME"] = district["DISTRICT_NAME"]
+
+        self.logger.info("Vectorized district assignment completed.")
+        return taxi_df
+
+    def assign_districts_to_taxi_vectorized(
+        self,
+        taxi_df: pd.DataFrame,
+        sample_size: int = 1000,
+        use_sample: bool = True,
+    ) -> pd.DataFrame:
+        """
+        Assign district names to taxi data points using the vectorized assign_district_vectorized function.
+
+        Parameters:
+        - taxi_df (pd.DataFrame): DataFrame containing taxi trajectory data.
+        - sample_size (int, optional): Number of samples to process for testing. Defaults to 1000.
+        - use_sample (bool, optional): Whether to process a sample or the entire dataset. Defaults to True.
+
+        Returns:
+        - pd.DataFrame: Taxi DataFrame with assigned district names.
+        """
+        # Rename columns for consistency
+        taxi_df = taxi_df.rename(columns={"START_LAT": "Lat", "START_LONG": "Long"})
+
+        if use_sample:
+            self.logger.info(
+                f"Sampling {sample_size} records for vectorized assignment."
+            )
+            processed_df = taxi_df.sample(sample_size, random_state=42).copy()
+            processed_df = self.assign_district_vectorized(processed_df)
+            self.logger.info("Vectorized district assignment to sample data completed.")
+            return processed_df
+        else:
+            self.logger.info(
+                "Assigning districts to the entire dataset using vectorized method."
+            )
+            taxi_df = self.assign_district_vectorized(taxi_df)
+            self.logger.info(
+                "Vectorized district assignment to entire dataset completed."
+            )
+            return taxi_df
 
     def remove_missing_gps(
         self,

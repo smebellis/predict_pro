@@ -1,15 +1,23 @@
-input: /home/smebellis/ece5831_final_project/data/train.csv
-output: /home/smebellis/ece5831_final_project/processed_data/taxi_data_processed.csv
-districts_path: /home/smebellis/ece5831_final_project/src/utils/porto_districts.json
-missing_data_column: "MISSING_DATA"
-missing_flag: true
-timestamp_column: "TIMESTAMP"
-polyline_column: "POLYLINE"
-polyline_list_column: "POLYLINE_LIST"
-travel_time_column: "TRAVEL_TIME"
-drop_na: true
-sample_size: 1000
-use_sample: false
-visualize: true
-visualization_dir: "visualizations"
-verbose: true
+app_name: Predict Pro
+version: 0.1.0
+
+paths:
+  input: /home/smebellis/ece5831_final_project/data/train.csv
+  output: /home/smebellis/ece5831_final_project/processed_data/taxi_data_processed.csv
+  districts_path: /home/smebellis/ece5831_final_project/src/utils/porto_districts.json
+  processed_data: /home/smebellis/ece5831_final_project/processed_data
+  logs: /home/smebellis/ece5831_final_project/logs
+
+parameters:
+  missing_data_column: "MISSING_DATA"
+  missing_flag: true
+  timestamp_column: "TIMESTAMP"
+  polyline_column: "POLYLINE"
+  polyline_list_column: "POLYLINE_LIST"
+  travel_time_column: "TRAVEL_TIME"
+  drop_na: true
+  sample_size: 1000
+  use_sample: false
+  visualize: true
+  visualization_dir: "visualizations"
+  verbose: true

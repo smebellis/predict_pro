@@ -10,7 +10,7 @@ import tqdm
 
 
 def setup_logging(
-    log_dir: str = "logs", log_file: str = "data_preprocessor.log"
+    name: str, log_dir: str = "logs", log_file: str = "data_preprocessor.log"
 ) -> logging.Logger:
     """
     Sets up logging for the application.
@@ -37,7 +37,7 @@ def setup_logging(
     )
     log_path = os.path.join(log_dir, log_filename)
 
-    logger = logging.getLogger("Predict Pro Logger")
+    logger = logging.getLogger(name.upper())
     logger.setLevel(logging.DEBUG)
 
     if not logger.handlers:
@@ -63,7 +63,7 @@ def setup_logging(
         logger.addHandler(file_handler)
         logger.addHandler(stream_handler)
 
-    logger.debug("Logger initialized and handlers added.")
+    logger.debug(f"Logger initialized and handlers added for {name}.")
     return logger
 
 

@@ -9,6 +9,8 @@ from utils.helper import (
 import pandas as pd
 from typing import Dict
 
+logger = setup_logging(__name__)
+
 
 def run_preprocessing_pipeline(
     input_file: str,
@@ -71,7 +73,6 @@ def run_preprocessing_pipeline(
     pd.DataFrame
         The preprocessed DataFrame.
     """
-    logger = setup_logging()
 
     # Load your data
     try:

@@ -13,7 +13,7 @@ from utils.helper import setup_logging, file_load, parse_arguments
 
 def main():
     # Set up logging
-    logger = setup_logging()
+    logger = setup_logging(__name__)
 
     try:
         args = parse_arguments()
@@ -65,15 +65,15 @@ def main():
             output_file=args.output,
             district=DISTRICTS,
             preprocessor=preprocessor,
-            missing_data_column=args.missing_data_column,
-            missing_flag=args.missing_flag,
-            timestamp_column=args.timestamp_column,
-            polyline_column=args.polyline_column,
-            polyline_list_column=args.polyline_list_column,
-            travel_time_column=args.travel_time_column,
-            drop_na=args.drop_na,
-            sample_size=args.sample_size,
-            use_sample=args.use_sample,
+            # missing_data_column=args.missing_data_column,
+            # missing_flag=args.missing_flag,
+            # timestamp_column=args.timestamp_column,
+            # polyline_column=args.polyline_column,
+            # polyline_list_column=args.polyline_list_column,
+            # travel_time_column=args.travel_time_column,
+            # drop_na=args.drop_na,
+            # sample_size=args.sample_size,
+            # use_sample=args.use_sample,
         )
         logger.info("Pipeline execution completed successfully.")
     except Exception as e:

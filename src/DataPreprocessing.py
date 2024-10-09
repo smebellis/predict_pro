@@ -5,6 +5,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional, Tuple, Union, Dict
+from utils.helper import setup_logging
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -20,6 +21,8 @@ pipeline file.  Also, I think this logger setup in the init can be
 removed.  It is redundant.  I already have a function that sets up a 
 logger.  Ideally the logger will be able to list from where is came from.  
 This is something to add to the Class.  """
+
+logger = setup_logging(__name__)
 
 
 class DataPreprocessing:
@@ -40,44 +43,6 @@ class DataPreprocessing:
         log_file : str, optional
             The base filename for the log file. Default is 'data_preprocessor.log'.
         """
-
-        # Ensure the log directory exists
-        os.makedirs(log_dir, exist_ok=True)
-
-        # Append current date and time to the log file name
-        current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        log_filename = f"{os.path.splitext(log_file)[0]}_{current_time}{os.path.splitext(log_file)[1]}"
-        log_path = os.path.join(log_dir, log_filename)
-
-        self.logger = logging.getLogger("DataPreprocessorLogger")
-        self.logger.setLevel(logging.DEBUG)  # Capture all levels of logs
-
-        # Prevent adding multiple handlers if the logger already has them
-        if not self.logger.handlers:
-            # Formatter for log messages
-            formatter = logging.Formatter(
-                "%(asctime)s - %(name)s - %(levelname)s - %(message)s"
-            )
-
-            # File Handler with Rotation
-            file_handler = RotatingFileHandler(
-                log_path,
-                maxBytes=5 * 1024 * 1024,  # 5 MB
-                backupCount=5,  # Keep up to 5 backup files
-            )
-            file_handler.setLevel(logging.DEBUG)  # Log all levels to file
-            file_handler.setFormatter(formatter)
-
-            # Stream Handler for stdout
-            stream_handler = logging.StreamHandler()
-            stream_handler.setLevel(logging.INFO)  # Log INFO and above to console
-            stream_handler.setFormatter(formatter)
-
-            # Add Handlers to the Logger
-            self.logger.addHandler(file_handler)
-            self.logger.addHandler(stream_handler)
-
-        self.logger.debug("Logger initialized and handlers added.")
 
         self.districts_df = self.load_districts(districts) if districts else None
 
@@ -137,7 +102,7 @@ class DataPreprocessing:
         Returns:
         - pd.DataFrame: Processed DataFrame with district boundaries and center coordinates.
         """
-        self.logger.debug("Converting districts dictionary to DataFrame.")
+        logger.debug("Converting districts dictionary to DataFrame.")
         districts_df = pd.DataFrame.from_dict(districts, orient="index").reset_index()
         districts_df = districts_df.rename(columns={"index": "DISTRICT_NAME"})
         districts_df["center_lat"] = (
@@ -146,7 +111,7 @@ class DataPreprocessing:
         districts_df["center_long"] = (
             districts_df["left_long"] + districts_df["right_long"]
         ) / 2
-        self.logger.debug("Calculated center coordinates for districts.")
+        logger.debug("Calculated center coordinates for districts.")
         return districts_df
 
     def assign_district(self, row: pd.Series) -> str:
@@ -160,7 +125,7 @@ class DataPreprocessing:
         - str: The name of the closest district containing the point or "no district" if none found.
         """
         if self.districts_df is None:
-            self.logger.error("Districts data not loaded. Cannot assign district.")
+            logger.error("Districts data not loaded. Cannot assign district.")
             return "no district"
 
         lon, lat = row["Long"], row["Lat"]
@@ -189,9 +154,7 @@ class DataPreprocessing:
         min_distance_idx = np.argmin(distances)
         closest_district = filtered_districts.iloc[min_distance_idx]["DISTRICT_NAME"]
 
-        self.logger.debug(
-            f"Assigned district '{closest_district}' to point ({lon}, {lat})."
-        )
+        logger.debug(f"Assigned district '{closest_district}' to point ({lon}, {lat}).")
         return closest_district
 
     def assign_districts_to_taxi(
@@ -218,26 +181,26 @@ class DataPreprocessing:
         taxi_df["DISTRICT_NAME"] = "no district"
 
         if use_sample:
-            self.logger.info(f"Sampling {sample_size} records for testing...")
+            logger.info(f"Sampling {sample_size} records for testing...")
             processed_df = taxi_df.sample(sample_size, random_state=42).copy()
 
             # Assign districts using the assign_district function
-            self.logger.debug("Assigning districts to sample data.")
+            logger.debug("Assigning districts to sample data.")
             tqdm.pandas(desc="Assigning districts to sample data")
             processed_df["DISTRICT_NAME"] = processed_df.progress_apply(
                 self.assign_district, axis=1
             )
 
-            self.logger.info("District assignment to sample data completed.")
+            logger.info("District assignment to sample data completed.")
             return processed_df
         else:
-            self.logger.info("Assigning districts to the entire dataset...")
+            logger.info("Assigning districts to the entire dataset...")
             tqdm.pandas(desc="Assigning districts to entire data")
             taxi_df["DISTRICT_NAME"] = taxi_df.progress_apply(
                 self.assign_district, axis=1
             )
 
-            self.logger.info("District assignment to entire dataset completed.")
+            logger.info("District assignment to entire dataset completed.")
             return taxi_df
 
     def assign_district_vectorized(self, taxi_df: pd.DataFrame) -> pd.DataFrame:
@@ -251,14 +214,14 @@ class DataPreprocessing:
         - pd.DataFrame: Taxi DataFrame with assigned district names.
         """
         if self.districts_df is None:
-            self.logger.error("Districts data not loaded. Cannot assign districts.")
+            logger.error("Districts data not loaded. Cannot assign districts.")
             taxi_df["DISTRICT_NAME"] = "no district"
             return taxi_df
 
         # Initialize 'DISTRICT_NAME' with 'no district'
         taxi_df["DISTRICT_NAME"] = "no district"
 
-        self.logger.info("Starting vectorized district assignment.")
+        logger.info("Starting vectorized district assignment.")
         for _, district in tqdm(
             self.districts_df.iterrows(),
             total=self.districts_df.shape[0],
@@ -273,7 +236,7 @@ class DataPreprocessing:
             )
             taxi_df.loc[condition, "DISTRICT_NAME"] = district["DISTRICT_NAME"]
 
-        self.logger.info("Vectorized district assignment completed.")
+        logger.info("Vectorized district assignment completed.")
         return taxi_df
 
     def assign_districts_to_taxi_vectorized(
@@ -297,21 +260,17 @@ class DataPreprocessing:
         taxi_df = taxi_df.rename(columns={"START_LAT": "Lat", "START_LONG": "Long"})
 
         if use_sample:
-            self.logger.info(
-                f"Sampling {sample_size} records for vectorized assignment."
-            )
+            logger.info(f"Sampling {sample_size} records for vectorized assignment.")
             processed_df = taxi_df.sample(sample_size, random_state=42).copy()
             processed_df = self.assign_district_vectorized(processed_df)
-            self.logger.info("Vectorized district assignment to sample data completed.")
+            logger.info("Vectorized district assignment to sample data completed.")
             return processed_df
         else:
-            self.logger.info(
+            logger.info(
                 "Assigning districts to the entire dataset using vectorized method."
             )
             taxi_df = self.assign_district_vectorized(taxi_df)
-            self.logger.info(
-                "Vectorized district assignment to entire dataset completed."
-            )
+            logger.info("Vectorized district assignment to entire dataset completed.")
             return taxi_df
 
     def remove_missing_gps(
@@ -727,7 +686,7 @@ class DataPreprocessing:
             elif file_format.lower() == "json":
                 df.to_json(path, **kwargs)
             else:
-                self.logger.error(f"Unsupported file format: {file_format}")
+                logger.error(f"Unsupported file format: {file_format}")
                 raise ValueError(f"Unsupported file format: {file_format}")
 
             return True
@@ -803,16 +762,16 @@ class DataPreprocessing:
         """
         # Type Validation
         if not isinstance(df, pd.DataFrame):
-            self.logger.error("Input is not a pandas DataFrame.")
+            logger.error("Input is not a pandas DataFrame.")
             raise TypeError("Input must be a pandas DataFrame.")
 
-        self.logger.info("Initiating drop_na operation.")
+        logger.info("Initiating drop_na operation.")
 
         initial_shape = df.shape
         df_cleaned = df.dropna().reset_index(drop=True)
         final_shape = df_cleaned.shape
         dropped_nan = initial_shape[0] - final_shape[0]
-        self.logger.info(f"Dropped {dropped_nan} rows containing NaN values.")
+        logger.info(f"Dropped {dropped_nan} rows containing NaN values.")
 
         return df_cleaned
 
@@ -845,7 +804,7 @@ class DataPreprocessing:
         if df.empty:
             raise ValueError("The input DataFrame is empty. Cannot drop columns.")
         if columns_to_drop is not None and not isinstance(columns_to_drop, list):
-            self.logger.error("columns_to_drop is not a list.")
+            logger.error("columns_to_drop is not a list.")
             raise TypeError("columns_to_drop must be a list of column names.")
 
         # Drop columns if they exist; ignore otherwise
@@ -887,40 +846,36 @@ class DataPreprocessing:
         """
         # Type Validation
         if not isinstance(df, pd.DataFrame):
-            self.logger.error("Input is not a pandas DataFrame.")
+            logger.error("Input is not a pandas DataFrame.")
             raise TypeError("Input must be a pandas DataFrame.")
 
         if not isinstance(column, str):
-            self.logger.error("Parameter 'column' must be a string.")
+            logger.error("Parameter 'column' must be a string.")
             raise TypeError(
                 "Parameter 'column' must be a string representing the column name."
             )
 
         if columns_to_add is not None:
             if not isinstance(columns_to_add, list):
-                self.logger.error(
-                    "Parameter 'columns_to_add' must be a list of strings."
-                )
+                logger.error("Parameter 'columns_to_add' must be a list of strings.")
                 raise TypeError("Parameter 'columns_to_add' must be a list of strings.")
             if not all(isinstance(col, str) for col in columns_to_add):
-                self.logger.error("All elements in 'columns_to_add' must be strings.")
+                logger.error("All elements in 'columns_to_add' must be strings.")
                 raise TypeError("All elements in 'columns_to_add' must be strings.")
         else:
             columns_to_add = ["LONG", "LAT"]
-            self.logger.info(
-                "No 'columns_to_add' provided. Using default ['LONG', 'LAT']."
-            )
+            logger.info("No 'columns_to_add' provided. Using default ['LONG', 'LAT'].")
 
         # Check if the specified column exists
         if column not in df.columns:
-            self.logger.error(
+            logger.error(
                 f"The specified column '{column}' does not exist in the DataFrame."
             )
             raise ValueError(
                 f"The specified column '{column}' does not exist in the DataFrame."
             )
 
-        self.logger.info(
+        logger.info(
             f"Extracting coordinates from column '{column}' and adding columns {columns_to_add}."
         )
 
@@ -930,9 +885,9 @@ class DataPreprocessing:
         # Convert the specified column to a list
         try:
             coordinates = coordinate_df[column].tolist()
-            # self.logger.debug(f"Coordinates extracted: {coordinates}")
+            # logger.debug(f"Coordinates extracted: {coordinates}")
         except Exception as e:
-            self.logger.error(f"Error converting column '{column}' to list: {e}")
+            logger.error(f"Error converting column '{column}' to list: {e}")
             raise ValueError(f"Error converting column '{column}' to list: {e}")
 
         # Validate the format of the coordinates
@@ -940,7 +895,7 @@ class DataPreprocessing:
             isinstance(coord, (list, tuple)) and len(coord) == len(columns_to_add)
             for coord in coordinates
         ):
-            self.logger.error(
+            logger.error(
                 f"All entries in column '{column}' must be lists or tuples of length {len(columns_to_add)}."
             )
             raise ValueError(
@@ -950,25 +905,23 @@ class DataPreprocessing:
         # Create a DataFrame from the list of coordinates
         try:
             lat_long_df = pd.DataFrame(coordinates, index=coordinate_df.index)
-            # self.logger.debug(
+            # logger.debug(
             #     f"Created DataFrame from coordinates: {lat_long_df.head()}"
             # )
         except Exception as e:
-            self.logger.error(f"Error creating DataFrame from coordinates: {e}")
+            logger.error(f"Error creating DataFrame from coordinates: {e}")
             raise ValueError(f"Error creating DataFrame from coordinates: {e}")
 
         # Assign new column names
         lat_long_df.columns = columns_to_add
-        self.logger.info(f"Renamed coordinate columns to {columns_to_add}.")
+        logger.info(f"Renamed coordinate columns to {columns_to_add}.")
 
         # Join the new coordinate columns to the original DataFrame
         try:
             coordinate_df = coordinate_df.join(lat_long_df)
-            self.logger.info(
-                f"Successfully joined new coordinate columns to the DataFrame."
-            )
+            logger.info(f"Successfully joined new coordinate columns to the DataFrame.")
         except Exception as e:
-            self.logger.error(f"Error joining coordinate columns: {e}")
+            logger.error(f"Error joining coordinate columns: {e}")
             raise ValueError(f"Error joining coordinate columns: {e}")
 
         return coordinate_df
@@ -1027,42 +980,42 @@ class DataPreprocessing:
             The preprocessed DataFrame.
         """
         try:
-            self.logger.info("Starting preprocessing pipeline.")
+            logger.info("Starting preprocessing pipeline.")
 
             # Step 1: Remove rows with missing GPS data
-            self.logger.info("Removing rows with missing GPS data.")
+            logger.info("Removing rows with missing GPS data.")
             df = self.remove_missing_gps(df, missing_data_column, missing_flag)
 
             # Step XX: Drop Columns
-            self.logger.info("Removing Columns from DataFrame")
+            logger.info("Removing Columns from DataFrame")
             df = self.drop_columns(df)
 
             # Step 2: Convert UNIX timestamps to datetime
-            self.logger.info("Converting UNIX timestamps to datetime objects.")
+            logger.info("Converting UNIX timestamps to datetime objects.")
             df = self.convert_timestamp(df, timestamp_column)
 
             # Step 3: Calculate travel time
-            self.logger.info("Calculating travel time.")
+            logger.info("Calculating travel time.")
             df = self.calculate_travel_time_fifteen_seconds(df, polyline_column)
 
             # Step 4: Convert Polyline column from string to list
-            self.logger.info("Converting Polyline column from string to list.")
+            logger.info("Converting Polyline column from string to list.")
             df = self.safe_convert_string_to_list(df, polyline_column)
 
             # Step 5: Extract start location from Polyline column
-            self.logger.info("Extracting start locations from Polyline column.")
+            logger.info("Extracting start locations from Polyline column.")
             df = self.extract_start_location(df, polyline_list_column)
 
             # Step 6: Extract end location from Polyline column
-            self.logger.info("Extracting end locations from Polyline column.")
+            logger.info("Extracting end locations from Polyline column.")
             df = self.extract_end_location(df, polyline_list_column)
 
             # Step 6: Extract end location from Polyline column
-            self.logger.info("Extracting end time from Starting Time and Travel Time.")
+            logger.info("Extracting end time from Starting Time and Travel Time.")
             df = self.calculate_end_time(df, timestamp_column, travel_time_column)
 
             # Step XX: Remove NaN objects from DataFrame
-            self.logger.info("Removing rows with NaN data")
+            logger.info("Removing rows with NaN data")
             df = self.drop_nan(df)
 
             # Stemp XX: Extract Lat Long Coordinates
@@ -1072,21 +1025,19 @@ class DataPreprocessing:
             ]
 
             for column, columns_to_add in coordinate_extractions:
-                self.logger.info(
-                    f"Extracting Lat/Long Coordinates from column '{column}'"
-                )
+                logger.info(f"Extracting Lat/Long Coordinates from column '{column}'")
                 df = self.extract_coordinates(df, column, columns_to_add)
 
             # Step 8: Add weekday output
-            self.logger.info("Adding weekday information.")
+            logger.info("Adding weekday information.")
             df = self.add_weekday(df, timestamp_column)
 
             # Step 9: Add Month output
-            self.logger.info("Adding Month information.")
+            logger.info("Adding Month information.")
             df = self.add_month(df, timestamp_column)
 
             # Step 10: Add Month output
-            self.logger.info("Adding Year information.")
+            logger.info("Adding Year information.")
             df = self.add_year(df, timestamp_column)
 
             # Step 11: Save the DataFrame to a CSV file only if it doesn't exist
@@ -1096,15 +1047,15 @@ class DataPreprocessing:
             )
 
             if was_saved:
-                self.logger.info(f"File saved to {file_path}.")
+                logger.info(f"File saved to {file_path}.")
             else:
-                self.logger.info(f"File {file_path} already exists. Skipping save.")
+                logger.info(f"File {file_path} already exists. Skipping save.")
 
-            self.logger.info("Preprocessing pipeline completed successfully.")
+            logger.info("Preprocessing pipeline completed successfully.")
             return df
 
         except Exception as e:
-            self.logger.error(f"An error occurred during preprocessing: {e}")
+            logger.error(f"An error occurred during preprocessing: {e}")
             raise
 
 

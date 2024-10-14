@@ -6,7 +6,7 @@ from typing import Dict, Optional, Union
 import argparse
 
 import pandas as pd
-import tqdm
+from tqdm import tqdm
 
 
 def setup_logging(
@@ -366,3 +366,41 @@ def save_dataframe_overwrite(
     except Exception as e:
         logging.error(f"An error occurred while saving the file: {e}")
         raise
+
+
+def read_csv_with_progress(file_path, chunksize=100000):
+    """
+    Reads a CSV file with a progress bar.
+
+    Parameters:
+    - file_path: Path to the CSV file.
+    - chunksize: Number of rows per chunk.
+
+    Returns:
+    - DataFrame containing the concatenated chunks.
+    """
+    # Get the file size for progress estimation
+    file_size = os.path.getsize(file_path)
+
+    # Initialize the progress bar using the file size
+    progress_bar = tqdm(total=file_size, desc="Reading CSV", unit="bytes")
+
+    # Initialize an empty list to hold chunks
+    chunks = []
+
+    # Read the CSV file in chunks and update progress bar by bytes read
+    with open(file_path, "rb") as f:
+        for chunk in pd.read_csv(
+            file_path, chunksize=chunksize, iterator=True, encoding="utf-8"
+        ):
+            chunks.append(chunk)
+            # Update progress bar by the bytes read for the chunk
+            progress_bar.update(f.tell() - progress_bar.n)
+
+    # Close the progress bar
+    progress_bar.close()
+
+    # Concatenate all chunks into a single DataFrame
+    df = pd.concat(chunks, ignore_index=True)
+
+    return df

@@ -10,7 +10,8 @@ from utils.helper import setup_logging
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from dotenv import load_dotenv
+
+# from dotenv import load_dotenv
 from tqdm import tqdm
 
 # Register tqdm with pandas

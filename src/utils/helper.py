@@ -27,6 +27,11 @@ def setup_logging(
     logger : logging.Logger
         Configured logger instance.
     """
+
+    root_dir = os.path.abspath(os.pardir)
+
+    log_dir_path = os.path.join(root_dir, log_dir)
+
     # Ensure the log directory exists
     os.makedirs(log_dir, exist_ok=True)
 
@@ -35,7 +40,7 @@ def setup_logging(
     log_filename = (
         f"{os.path.splitext(log_file)[0]}_{current_time}{os.path.splitext(log_file)[1]}"
     )
-    log_path = os.path.join(log_dir, log_filename)
+    log_path = os.path.join(log_dir_path, log_filename)
 
     logger = logging.getLogger(name.upper())
     logger.setLevel(logging.DEBUG)
@@ -379,23 +384,23 @@ def read_csv_with_progress(file_path, chunksize=100000):
     Returns:
     - DataFrame containing the concatenated chunks.
     """
-    # Get the file size for progress estimation
-    file_size = os.path.getsize(file_path)
+    # Get the total number of lines in the file for the progress bar
+    # This can be time-consuming for very large files
+    with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+        total = sum(1 for _ in f)
 
-    # Initialize the progress bar using the file size
-    progress_bar = tqdm(total=file_size, desc="Reading CSV", unit="bytes")
+    # Initialize the progress bar
+    progress_bar = tqdm(total=total, desc="Reading CSV", unit="lines")
 
     # Initialize an empty list to hold chunks
     chunks = []
 
-    # Read the CSV file in chunks and update progress bar by bytes read
-    with open(file_path, "rb") as f:
-        for chunk in pd.read_csv(
-            file_path, chunksize=chunksize, iterator=True, encoding="utf-8"
-        ):
-            chunks.append(chunk)
-            # Update progress bar by the bytes read for the chunk
-            progress_bar.update(f.tell() - progress_bar.n)
+    # Read the CSV file in chunks
+    for chunk in pd.read_csv(
+        file_path, chunksize=chunksize, iterator=True, encoding="utf-8"
+    ):
+        chunks.append(chunk)
+        progress_bar.update(len(chunk))
 
     # Close the progress bar
     progress_bar.close()

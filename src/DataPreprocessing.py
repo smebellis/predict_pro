@@ -526,8 +526,46 @@ class DataPreprocessing:
         weekday_df = df.copy()
 
         weekday_df["WEEKDAY"] = weekday_df[timestamp_column].dt.day_name()
+        weekday_df["WEEKDAY_NUM"] = weekday_df[timestamp_column].dt.weekday
 
         return weekday_df
+
+    def add_time(
+        self, df: pd.DataFrame, timestamp_column: str = "TIMESTAMP"
+    ) -> pd.DataFrame:
+        """
+        Calculate the time of day from the timestamp column and add it as a new column.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame with a datetime timestamp column.
+        timestamp_column : str, optional
+            The name of the column that contains datetime timestamp data (default is "TIMESTAMP").
+
+        Returns:
+        -------
+        pd.DataFrame
+            The DataFrame with a new column named 'TIME'.
+
+        Raises:
+        ------
+        ValueError
+            If the specified timestamp column does not exist in the DataFrame.
+        """
+        if timestamp_column not in df.columns:
+            raise ValueError(
+                f"The DataFrame does not contain the '{timestamp_column}' column."
+            )
+        if df.empty:
+            raise IndexError("Cannot add 'TIME' to an empty DataFrame.")
+
+        # Make a copy to avoid altering original dataframe
+        time_df = df.copy()
+
+        time_df["TIME"] = time_df[timestamp_column].dt.hour
+
+        return time_df
 
     def add_month(
         self, df: pd.DataFrame, timestamp_column: str = "TIMESTAMP"

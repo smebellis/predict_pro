@@ -5,6 +5,7 @@ from utils.helper import (
     save_dataframe_if_not_exists,
     save_dataframe_overwrite,
     parse_arguments,
+    read_csv_with_progress,
 )
 import pandas as pd
 from typing import Dict
@@ -39,9 +40,10 @@ def run_preprocessing_pipeline(
     9. Remove NaN objects from DataFrame.
     10. Extract Lat/Long Coordinates.
     11. Add weekday information.
-    12. Add month information.
-    13. Add year information.
-    14. Save output to CSV.
+    12. Add time information.
+    13. Add month information.
+    14. Add year information.
+    15. Save output to CSV.
 
     Parameters
     ----------
@@ -77,7 +79,8 @@ def run_preprocessing_pipeline(
     # Load your data
     try:
         logger.info(f"Loading data from {input_file}")
-        df = pd.read_csv(input_file)  # add nrows=number to process a smaller sample
+        df = read_csv_with_progress(input_file)
+        # df = pd.read_csv(input_file)  # add nrows=number to process a smaller sample
         logger.info(f"Loaded data from {input_file}.")
     except FileNotFoundError:
         logger.error(f"Input file {input_file} not found.")
@@ -145,14 +148,18 @@ def run_preprocessing_pipeline(
         df = preprocessor.add_weekday(df, timestamp_column)
 
         # Step 12: Add month information
+        logger.info("Adding time information.")
+        df = preprocessor.add_time(df, timestamp_column)
+
+        # Step 13: Add month information
         logger.info("Adding month information.")
         df = preprocessor.add_month(df, timestamp_column)
 
-        # Step 13: Load Districts from JSON
+        # Step 14: Load Districts from JSON
         logger.info("Loading districts from JSON file")
         district_df = preprocessor.load_districts(districts=district)
 
-        # Step 14: Assign Districts
+        # Step 15: Assign Districts
         logger.info("Assigning districts to taxi data.")
         # Choose between sampling and entire dataset
         df = preprocessor.assign_districts_to_taxi(
@@ -161,11 +168,11 @@ def run_preprocessing_pipeline(
         # Or use the vectorized method
         # df = preprocessor.assign_districts_to_taxi_vectorized(df, sample_size=1000, use_sample=True)
 
-        # Step 15: Add year information
+        # Step 16: Add year information
         logger.info("Adding year information.")
         df = preprocessor.add_year(df, timestamp_column)
 
-        # Step 16: Save the processed DataFrame
+        # Step 17: Save the processed DataFrame
         was_saved = save_dataframe_if_not_exists(df, output_file, file_format="csv")
         if was_saved:
             logger.info(f"File saved to {output_file}.")

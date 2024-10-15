@@ -1,0 +1,1 @@
+python main.py --input "/home/smebellis/ece5831_final_project/data/train.csv" --output "/home/smebellis/ece5831_final_project/processed_data/taxi_data_processed1.csv" --districts_path "/home/smebellis/ece5831_final_project/src/utils/porto_districts.json"

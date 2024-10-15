@@ -1,4 +1,5 @@
 import logging
+from logging.handlers import RotatingFileHandler
 import os
 from datetime import datetime
 from pathlib import Path
@@ -151,6 +152,12 @@ def parse_arguments():
         help="Path to the configuration file.",
     )
     parser.add_argument("--verbose", action="store_true", help="Enable verbose output.")
+
+    parser.add_argument(
+        "--process_pipeline",
+        action="store_true",
+        help="Decides if the pipeline should be ran",
+    )
 
     return parser.parse_args()
 

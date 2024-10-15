@@ -4,7 +4,7 @@ import pandas as pd
 from hdbscan import HDBSCAN
 from tqdm import tqdm
 
-from utils.helper import setup_logging
+from src.utils.helper import setup_logging
 
 logger = setup_logging(__name__)
 

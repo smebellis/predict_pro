@@ -34,7 +34,7 @@ def setup_logging(
     log_dir_path = os.path.join(root_dir, log_dir)
 
     # Ensure the log directory exists
-    os.makedirs(log_dir, exist_ok=True)
+    os.makedirs(log_dir_path, exist_ok=True)
 
     # Append current date and time to the log file name
     current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")

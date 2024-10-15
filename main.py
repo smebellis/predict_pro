@@ -5,10 +5,10 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from DataPreprocessing import DataPreprocessing
-from pipeline import run_preprocessing_pipeline
-from clustering import cluster_hdbscan
-from utils.helper import (
+from src.DataPreprocessing import DataPreprocessing
+from src.pipeline import run_preprocessing_pipeline
+from src.clustering import cluster_hdbscan
+from src.utils.helper import (
     file_load,
     parse_arguments,
     setup_logging,

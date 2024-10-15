@@ -5,7 +5,7 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional, Tuple, Union, Dict
-from utils.helper import setup_logging
+from src.utils.helper import setup_logging
 
 import matplotlib.pyplot as plt
 import numpy as np

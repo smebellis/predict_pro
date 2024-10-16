@@ -4,9 +4,9 @@ import pandas as pd
 from hdbscan import HDBSCAN
 from tqdm import tqdm
 
-from src.utils.helper import setup_logging
+from src.logger import get_logger
 
-logger = setup_logging(__name__)
+logger = get_logger(__name__)
 
 
 def cluster_hdbscan(df: pd.DataFrame) -> pd.DataFrame:

@@ -11,14 +11,25 @@ from src.clustering import cluster_hdbscan
 from src.utils.helper import (
     file_load,
     parse_arguments,
-    setup_logging,
     read_csv_with_progress,
+    load_config,
+    save_dataframe_if_not_exists,
 )
+
+from src.logger import get_logger
+
+# Set up logging
+logger = get_logger(__name__)
 
 
 def main():
-    # Set up logging
-    logger = setup_logging(__name__)
+    # Load config file
+    config = load_config()
+
+    # Access application details
+    app_name = config.get("app_name", "MyApp")
+    version = config.get("version", "0.0.1")
+    logger.info(f"Starting {app_name} version {version}")
 
     try:
         args = parse_arguments()
@@ -61,8 +72,6 @@ def main():
     # Initialize and run the DataPreprocessor
     preprocessor = DataPreprocessing(districts=DISTRICTS)
 
-    # TODO: Use the config file.
-    # TODO: Make sure to use the env file to make sure logger puts the logs in the parent directory
     # TODO: Add an argument to load a smaller sample when loading the original dataset.
     if (
         args.process_pipeline
@@ -92,8 +101,8 @@ def main():
             df = read_csv_with_progress(args.output)
             clustered_df = cluster_hdbscan(df)
             logger.info("CSV file read successfully.")
-            breakpoint()
-            # You can add further processing of `df` here if needed
+            save_dataframe_if_not_exists(clustered_df, args.save)
+            logger.indo(f"Clustered DataFrame Save to {args.save}")
         except Exception as e:
             logger.error(f"Failed to read CSV file: {e}")
             sys.exit(1)

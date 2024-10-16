@@ -1,7 +1,6 @@
 from src.DataPreprocessing import DataPreprocessing
 
 from src.utils.helper import (
-    setup_logging,
     save_dataframe_if_not_exists,
     save_dataframe_overwrite,
     parse_arguments,
@@ -10,7 +9,9 @@ from src.utils.helper import (
 import pandas as pd
 from typing import Dict
 
-logger = setup_logging(__name__)
+from src.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def run_preprocessing_pipeline(

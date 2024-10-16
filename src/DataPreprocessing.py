@@ -5,7 +5,6 @@ from datetime import datetime
 from logging.handlers import RotatingFileHandler
 from pathlib import Path
 from typing import Optional, Tuple, Union, Dict
-from src.utils.helper import setup_logging
 
 import matplotlib.pyplot as plt
 import numpy as np
@@ -23,7 +22,9 @@ removed.  It is redundant.  I already have a function that sets up a
 logger.  Ideally the logger will be able to list from where is came from.  
 This is something to add to the Class.  """
 
-logger = setup_logging(__name__)
+from src.logger import get_logger
+
+logger = get_logger(__name__)
 
 
 class DataPreprocessing:
@@ -132,8 +133,8 @@ class DataPreprocessing:
         lon, lat = row["Long"], row["Lat"]
 
         # Correcting the bounding box logic if necessary
-        within_long = (self.districts_df["left_long"] >= lon) & (
-            lon >= self.districts_df["right_long"]
+        within_long = (self.districts_df["left_long"] <= lon) & (
+            lon <= self.districts_df["right_long"]
         )
         within_lat = (self.districts_df["lower_lat"] <= lat) & (
             lat <= self.districts_df["upper_lat"]

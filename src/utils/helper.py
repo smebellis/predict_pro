@@ -1,6 +1,5 @@
 import logging
-from logging.handlers import RotatingFileHandler
-import os
+import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Union
@@ -10,67 +9,42 @@ import pandas as pd
 from tqdm import tqdm
 
 
-def setup_logging(
-    name: str, log_dir: str = "logs", log_file: str = "data_preprocessor.log"
-) -> logging.Logger:
+def load_config(config_path: str = "config.yaml") -> dict:
     """
-    Sets up logging for the application.
+    Load configuration from a YAML file.
 
-    Parameters:
-    ----------
-    log_dir : str
-        Directory to store log files.
-    log_file : str
-        Base name for the log file.
+    Args:
+        config_path (str): Path to the YAML configuration file.
 
     Returns:
-    -------
-    logger : logging.Logger
-        Configured logger instance.
+        dict: Parsed configuration as a dictionary.
+
+    Raises:
+        FileNotFoundError: If the configuration file does not exist.
+        yaml.YAMLError: If there's an error parsing the YAML file.
     """
+    config_file = Path(config_path).resolve()
+    root_dir = config_file.parent
 
-    root_dir = os.path.abspath(os.pardir)
+    if not config_file.exists():
+        raise FileNotFoundError(f"Configuration file '{config_file}' not found.")
 
-    log_dir_path = os.path.join(root_dir, log_dir)
+    try:
+        with open(config_file, "r") as file:
+            config = yaml.safe_load(file)
+            print(f"Configuration loaded successfully from '{config_file}'.")
 
-    # Ensure the log directory exists
-    os.makedirs(log_dir_path, exist_ok=True)
+        # Resolve relative paths based on the config file's directory
+        paths = config.get("paths", {})
+        for key, path in paths.items():
+            p = Path(path)
+            if not p.is_absolute():
+                paths[key] = str((root_dir / p).resolve())
+        config["paths"] = paths
 
-    # Append current date and time to the log file name
-    current_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    log_filename = (
-        f"{os.path.splitext(log_file)[0]}_{current_time}{os.path.splitext(log_file)[1]}"
-    )
-    log_path = os.path.join(log_dir_path, log_filename)
-
-    logger = logging.getLogger(name.upper())
-    logger.setLevel(logging.DEBUG)
-
-    if not logger.handlers:
-        formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
-            datefmt="%Y-%m-%d %H:%M:%S",
-        )
-
-        # File Handler with Rotation
-        file_handler = logging.handlers.RotatingFileHandler(
-            log_path,
-            maxBytes=5 * 1024 * 1024,  # 5 MB
-            backupCount=5,
-        )
-        file_handler.setLevel(logging.DEBUG)
-        file_handler.setFormatter(formatter)
-
-        # Stream Handler for stdout
-        stream_handler = logging.StreamHandler()
-        stream_handler.setLevel(logging.INFO)
-        stream_handler.setFormatter(formatter)
-
-        logger.addHandler(file_handler)
-        logger.addHandler(stream_handler)
-
-    logger.debug(f"Logger initialized and handlers added for {name}.")
-    return logger
+        return config
+    except yaml.YAMLError as e:
+        raise yaml.YAMLError(f"Error parsing YAML file: {e}")
 
 
 def parse_arguments():
@@ -158,6 +132,8 @@ def parse_arguments():
         action="store_true",
         help="Decides if the pipeline should be ran",
     )
+
+    parser.add_argument("--save", type=str, help="Path to save the file")
 
     return parser.parse_args()
 

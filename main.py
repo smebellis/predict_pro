@@ -2,7 +2,12 @@ import json
 import logging
 import sys
 
-from src.clustering import cluster_hdbscan
+from src.cluster_districts import (
+    cluster_trip_district,
+    cluster_trip_time,
+    HDBSCAN_Clustering,
+    determine_traffic_status,
+)
 from src.DataPreprocessing import DataPreprocessing
 from src.logger import get_logger, load_config
 from src.pipeline import run_preprocessing_pipeline
@@ -68,6 +73,8 @@ def main():
     preprocessor = DataPreprocessing(districts=DISTRICTS)
 
     # TODO: Add an argument to load a smaller sample when loading the original dataset.
+    # TODO:  Need a flag that will just load the dataset from csv.  No need to process it everytime
+
     if (
         args.process_pipeline
     ):  # add the flag --process_pipeline if you want to run the whole pipeline
@@ -94,8 +101,12 @@ def main():
     else:
         try:
             df = read_csv_with_progress(args.output)
-            clustered_df = cluster_hdbscan(df)
+
             logger.info("CSV file read successfully.")
+            clustered_df = cluster_trip_district(df, DISTRICTS)
+            clustered_df = cluster_trip_time(df)
+            clustered_df = HDBSCAN_Clustering(df)
+            clustered_df = determine_traffic_status(df)
             save_dataframe_if_not_exists(clustered_df, args.save)
             logger.indo(f"Clustered DataFrame Save to {args.save}")
         except Exception as e:

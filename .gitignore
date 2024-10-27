@@ -30,6 +30,13 @@ wheels/
 *.manifest
 *.spec
 
+# Debugger
+.vscode/
+
+# Archive
+archive/
+archive/*.*
+
 # Installer logs
 pip-log.txt
 pip-delete-this-directory.txt

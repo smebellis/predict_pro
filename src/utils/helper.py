@@ -4,6 +4,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Union
 import argparse
+from sklearn.cluster import KMeans
 
 import pandas as pd
 from tqdm import tqdm
@@ -136,6 +137,18 @@ def parse_arguments():
     parser.add_argument("--save", type=str, help="Path to save the file")
 
     return parser.parse_args()
+
+
+def categorize_time(df: pd.DataFrame) -> str:
+    """
+    Take an interval and maps it to a time category
+    """
+    # Define bins for morning, afternoon, and night
+    bins = [0, 12, 18, 24]  # Morning: 0-12, Afternoon: 12-18, Night: 18-24
+    labels = ["Morning", "Afternoon", "Night"]
+
+    # Use pd.cut to categorize the 'TIME' column into the defined bins
+    df["Time_of_Day"] = pd.cut(df["TIME"], bins=bins, labels=labels, right=False)
 
 
 def file_load(file_path: Union[str, Path]) -> pd.DataFrame:
@@ -392,3 +405,10 @@ def read_csv_with_progress(file_path, chunksize=100000):
     df = pd.concat(chunks, ignore_index=True)
 
     return df
+
+
+if __name__ == "__main__":
+    df = pd.read_csv(
+        "/home/smebellis/ece5831_final_project/processed_data/clustered_taxi_data.csv",
+        nrows=10000,
+    )

@@ -73,16 +73,16 @@ fig.update_layout(
 # Optional: Add Taxi Data Points (e.g., as Scattermapbox Points)
 # Uncomment the following block if you want to visualize taxi locations
 
-fig.add_trace(
-    go.Scattermapbox(
-        lon=df["Long"],
-        lat=df["Lat"],
-        mode="markers",
-        marker=dict(size=5, color="red", opacity=0.5),
-        name="Taxi Locations",
-        hoverinfo="none",
-    )
-)
+# fig.add_trace(
+#     go.Scattermapbox(
+#         lon=df["Long"],
+#         lat=df["Lat"],
+#         mode="markers",
+#         marker=dict(size=5, color="red", opacity=0.5),
+#         name="Taxi Locations",
+#         hoverinfo="none",
+#     )
+# )
 
 
 # Step 6: Display the Figure

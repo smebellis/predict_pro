@@ -1,5 +1,7 @@
 import ast
+import json
 import math
+import sys
 from typing import Any
 
 import numpy as np
@@ -8,13 +10,10 @@ from hdbscan import HDBSCAN
 from sklearn.cluster import KMeans
 from sklearn.exceptions import NotFittedError
 from tqdm import tqdm
-import sys
-import json
-from joblib import Parallel, delayed
-
-from src.utils.helper import save_dataframe_if_not_exists
 
 from src.logger import get_logger
+from src.utils.helper import save_dataframe_if_not_exists
+from src.districts import load_districts
 
 logger = get_logger(__name__)
 
@@ -293,26 +292,14 @@ if __name__ == "__main__":
     PORTO_DISTRICTS = (
         "/home/smebellis/ece5831_final_project/src/utils/porto_districts.json"
     )
+    # Load Districts Data
+    logger.info("Loading district boundary data...")
     try:
-        with open(PORTO_DISTRICTS, "r") as FILE:
-            DISTRICTS = json.load(FILE)
-    except FileNotFoundError:
-        logger.error(f"Districts file not found at {PORTO_DISTRICTS}.")
-        sys.exit(1)
-    except json.JSONDecodeError:
-        logger.error("Error decoding JSON from districts file.")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Unexpected error loading districts: {e}")
+        porto_districts = load_districts(PORTO_DISTRICTS)
+    except porto_districts.DistrictLoadError:
         sys.exit(1)
 
-    if not isinstance(DISTRICTS, dict) or not DISTRICTS:
-        logger.error(
-            "DISTRICTS should be a non-empty dictionary. Please provide valid district data."
-        )
-        sys.exit(1)
-
-    df = cluster_trip_district(df, DISTRICTS)
+    df = cluster_trip_district(df, porto_districts)
     df = cluster_trip_time(df)
     df = HDBSCAN_Clustering(df)
     df = determine_traffic_status(df)
@@ -321,10 +308,3 @@ if __name__ == "__main__":
         df,
         "/home/smebellis/ece5831_final_project/processed_data/post_processing_clustered.csv",
     )
-    # df["EXTRACTED"] = df["POLYLINE"].apply(lambda x: extract_coordinate_pairs(x))
-
-    # for index, row in df.iterrows():
-    #     extracted_pairs = row["EXTRACTED"]
-    #     for coord in extracted_pairs:
-    #         lat, lon = coord
-    #         print(f"Row {index}: Latitude = {lat}, Longitude = {lon}")

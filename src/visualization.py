@@ -8,7 +8,7 @@ import os
 
 # Step 1: Read the Taxi Data
 df = pd.read_csv(
-    "/home/smebellis/ece5831_final_project/processed_data/taxi_data_processed.csv",
+    "/home/smebellis/ece5831_final_project/processed_data/post_processing_clustered.csv",
     nrows=10000,
 )
 
@@ -21,7 +21,7 @@ fig = go.Figure()
 
 # Step 3: Load Districts Data from JSON
 with open(
-    "/home/smebellis/ece5831_final_project/src/utils/porto_districts.json", "r"
+    "/home/smebellis/ece5831_final_project/data/porto_districts.json", "r"
 ) as FILE:
     data = json.load(FILE)
 
@@ -57,6 +57,21 @@ for region, coords in data.items():
             text=region,  # Display the region name on hover
         )
     )
+    # Step 4.1: Add labels for each district in the center of the district
+    # center_lat = (coords["lower_lat"] + coords["upper_lat"]) / 2
+    # center_long = (coords["left_long"] + coords["right_long"]) / 2
+
+    # Add a trace for the label (using mode='text' to display the name of the district)
+    # fig.add_trace(
+    #     go.Scattermapbox(
+    #         lat=[center_lat],
+    #         lon=[center_long],
+    #         mode="text",
+    #         text=[region],
+    #         textfont=dict(size=14, color="black"),  # Customize font size and color
+    #         hoverinfo="skip",  # Skip hover info for the label
+    #     )
+    # )
 
 # Step 5: Update the Layout of the Map
 fig.update_layout(
@@ -90,7 +105,7 @@ fig.show()
 
 # Step 7: Save the Figure
 
-root_dir = os.path.abspath(os.pardir)
+root_dir = "/home/smebellis/ece5831_final_project/"
 
 save_dir = os.path.join(root_dir, "images")
 if not os.path.exists(save_dir):

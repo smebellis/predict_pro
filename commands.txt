@@ -3,5 +3,5 @@
 
 python main.py --input "/home/smebellis/ece5831_final_project/data/train.csv" --output "/home/smebellis/ece5831_final_project/processed_data/taxi_data_processed.csv" --districts_path "/home/smebellis/ece5831_final_project/data/porto_districts.json"
 
-## To save the clustered data
+## To Run the clustered data pipeline
 python scripts/run_cluster_districts.py --input "/home/smebellis/ece5831_final_project/data/train.csv" --output "/home/smebellis/ece5831_final_project/processed_data/processed_taxi_data.csv" --districts_path "/home/smebellis/ece5831_final_project/data/porto_districts.json" --save "/home/smebellis/ece5831_final_project/processed_data/post_processing_clustered.csv"

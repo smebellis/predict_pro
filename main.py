@@ -56,8 +56,11 @@ def main():
 
     # Initialize and run the DataPreprocessor
     preprocessor = DataPreprocessing(districts=porto_districts)
+
     # TODO: Add an argument to load a smaller sample when loading the original dataset.
     # TODO:  Need a flag that will just load the dataset from csv.  No need to process it everytime
+    # TODO:  The process pipeline needs to be made into its own module
+    # TODO:  Remove logic to run pipelines from main.py, they will be in separate scripts.
 
     if (
         args.process_pipeline

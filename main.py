@@ -18,6 +18,8 @@ from src.utils.helper import (
     save_dataframe_if_not_exists,
 )
 
+from src.districts import load_districts
+
 # Set up logging
 logger = get_logger(__name__)
 
@@ -45,33 +47,15 @@ def main():
 
     logger.info("Starting the Data Preprocessing Pipeline.")
 
-    # Path tio JSON file
-    PORTO_DISTRICTS = args.districts_path
-
     # Load Districts Data
     logger.info("Loading district boundary data...")
     try:
-        with open(PORTO_DISTRICTS, "r") as FILE:
-            DISTRICTS = json.load(FILE)
-    except FileNotFoundError:
-        logger.error(f"Districts file not found at {PORTO_DISTRICTS}.")
-        sys.exit(1)
-    except json.JSONDecodeError:
-        logger.error("Error decoding JSON from districts file.")
-        sys.exit(1)
-    except Exception as e:
-        logger.error(f"Unexpected error loading districts: {e}")
-        sys.exit(1)
-
-    if not isinstance(DISTRICTS, dict) or not DISTRICTS:
-        logger.error(
-            "DISTRICTS should be a non-empty dictionary. Please provide valid district data."
-        )
+        porto_districts = load_districts(args.districts_path)
+    except porto_districts.DistrictLoadError:
         sys.exit(1)
 
     # Initialize and run the DataPreprocessor
-    preprocessor = DataPreprocessing(districts=DISTRICTS)
-
+    preprocessor = DataPreprocessing(districts=porto_districts)
     # TODO: Add an argument to load a smaller sample when loading the original dataset.
     # TODO:  Need a flag that will just load the dataset from csv.  No need to process it everytime
 
@@ -82,7 +66,7 @@ def main():
             run_preprocessing_pipeline(
                 input_file=args.input,
                 output_file=args.output,
-                district=DISTRICTS,
+                district=porto_districts,
                 preprocessor=preprocessor,
                 # missing_data_column=args.missing_data_column,
                 # missing_flag=args.missing_flag,
@@ -103,12 +87,12 @@ def main():
             df = read_csv_with_progress(args.output)
 
             logger.info("CSV file read successfully.")
-            clustered_df = cluster_trip_district(df, DISTRICTS)
+            clustered_df = cluster_trip_district(df, porto_districts)
             clustered_df = cluster_trip_time(df)
             clustered_df = HDBSCAN_Clustering(df)
             clustered_df = determine_traffic_status(df)
             save_dataframe_if_not_exists(clustered_df, args.save)
-            logger.indo(f"Clustered DataFrame Save to {args.save}")
+            logger.info(f"Clustered DataFrame Save to {args.save}")
         except Exception as e:
             logger.error(f"Failed to read CSV file: {e}")
             sys.exit(1)

@@ -12,14 +12,14 @@ import sys
 import json
 from joblib import Parallel, delayed
 
-from utils.helper import save_dataframe_if_not_exists
+from src.utils.helper import save_dataframe_if_not_exists
 
-from logger import get_logger
+from src.logger import get_logger
 
 logger = get_logger(__name__)
 
 
-def cluster_trip_district(df: pd.DataFrame, DISTRICTS: json) -> pd.DataFrame:
+def cluster_trip_district(df: pd.DataFrame, districts: json) -> pd.DataFrame:
     """
     Cluster districts into predefined groups and map each district in the dataframe to its corresponding cluster.
 
@@ -29,7 +29,7 @@ def cluster_trip_district(df: pd.DataFrame, DISTRICTS: json) -> pd.DataFrame:
     Returns:
         pd.DataFrame: The input dataframe with an additional 'CLUSTER' column indicating the assigned cluster for each district.
     """
-    district_boundaries = DISTRICTS
+    district_boundaries = districts
 
     logger.info("Defining district centroids.")
 

@@ -439,6 +439,10 @@ class Preprocessing:
             lambda x: x[-1][1] if len(x) > 0 and len(x[0]) > 0 else None
         )
 
+        extract_df["ROUTE"] = extract_df["POLYLINE"].apply(
+            lambda x: x[1:-2][:2] if len(x) > 3 else []
+        )
+
         return extract_df
 
     def separate_timestamp(

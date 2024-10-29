@@ -13,7 +13,7 @@ from tqdm import tqdm
 
 from src.logger import get_logger
 from src.utils.helper import save_dataframe_if_not_exists
-from src.districts import load_districts
+from src.districts import load_districts, DistrictLoadError
 
 logger = get_logger(__name__)
 

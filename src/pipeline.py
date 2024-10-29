@@ -78,13 +78,13 @@ def preprocessing_pipeline(
 
         # Step 8: Assign the districts to taxi data
         logger.info("Assigning districts to taxi data.")
-        # Choose vectorized or row-wise for method.
+        # Choose vectorized or row-wise for method, row-wise is more accurate, but lengthy.
         df = preprocessor.assign_districts(df, method="vectorized")
 
         # Step 9: Calculate the travel time of each trip
         logger.info("Calculate the travel time")
         df = preprocessor.calculate_travel_time(df)
-        breakpoint()
+
         # Step 9: Save the processed DataFrame
         was_saved = save_dataframe_if_not_exists(df, output_file, file_format="csv")
         if was_saved:

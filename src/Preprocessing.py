@@ -316,7 +316,7 @@ class Preprocessing:
 
         return converted_df
 
-    def calculate_travel_time_fifteen_seconds(
+    def calculate_travel_time(
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
     ) -> pd.DataFrame:
         """
@@ -578,7 +578,6 @@ class Preprocessing:
 if __name__ == "__main__":
     data = "/home/smebellis/ece5831_final_project/data/train.csv"
     df = pd.read_csv(data, nrows=50000)
-    dp = DataPreprocessing()
-    df = dp.preprocess(df)
+    dp = Preprocessing()
 
     breakpoint()

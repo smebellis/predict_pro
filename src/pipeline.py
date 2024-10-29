@@ -24,7 +24,6 @@ def preprocessing_pipeline(
     missing_flag: bool = True,
     timestamp_column: str = "TIMESTAMP",
     polyline_column: str = "POLYLINE",
-    polyline_list_column: str = "POLYLINE_LIST",
     travel_time_column: str = "TRAVEL_TIME",
     drop_na: bool = True,
 ) -> pd.DataFrame:
@@ -58,28 +57,35 @@ def preprocessing_pipeline(
         logger.info("Converting UNIX timestamps to datetime objects.")
         df = preprocessor.convert_timestamp(df, timestamp_column)
 
+        # Step 4: Convert POLYLINE coordinates to a list object
         logger.info("Converting Coordinates from string to list object")
         df = preprocessor.convert_polyline_to_list(df, polyline_column)
 
-        # Step 6: Extract start location from Polyline column
+        # Step 5: Extract Starting and Ending locations from POLYLINE
         logger.info("Extracting Starting and Ending locations from Polyline column.")
         df = preprocessor.extract_coordinates(df, polyline_column)
 
-        # Step 9: Remove NaN objects from DataFrame
+        # Step 6: Remove NaN objects from DataFrame
         if drop_na:
             logger.info("Removing rows with NaN data.")
             df = preprocessor.drop_nan(df)
         else:
             logger.info("Skipping removal of NaN data as per configuration.")
 
+        # Step 7: Parse individual time components from TIMESTAMP
         logger.info("Separating time into individual components")
         df = preprocessor.separate_timestamp(df, timestamp_column)
 
+        # Step 8: Assign the districts to taxi data
         logger.info("Assigning districts to taxi data.")
         # Choose vectorized or row-wise for method.
         df = preprocessor.assign_districts(df, method="vectorized")
 
-        # Step 17: Save the processed DataFrame
+        # Step 9: Calculate the travel time of each trip
+        logger.info("Calculate the travel time")
+        df = preprocessor.calculate_travel_time(df)
+        breakpoint()
+        # Step 9: Save the processed DataFrame
         was_saved = save_dataframe_if_not_exists(df, output_file, file_format="csv")
         if was_saved:
             logger.info(f"File saved to {output_file}.")

@@ -28,15 +28,11 @@ class Preprocessing:
         districts: Dict = None,
     ):
         """
-        Initialize the DataPreprocessor with a dedicated logger that logs to both a file and stdout.
-        Logs are stored in a separate directory with date and time appended to the log file name.
-
-        Parameters:
-        ----------
-        log_dir : str, optional
-            The directory where log files will be stored. Default is 'logs'.
-        log_file : str, optional
-            The base filename for the log file. Default is 'data_preprocessor.log'.
+        Initializes the Preprocessing class.
+        Args:
+            districts (Dict, optional): A dictionary containing district data. Defaults to None.
+        Attributes:
+            districts_df (DataFrame or None): A DataFrame containing the loaded district data if provided, otherwise None.
         """
 
         self.districts_df = self.load_districts(districts) if districts else None
@@ -159,6 +155,30 @@ class Preprocessing:
         return taxi_df
 
     def assign_district_vectorized(self, taxi_df: pd.DataFrame) -> pd.DataFrame:
+        """
+        Assigns district names to taxi data based on their start coordinates using vectorized operations.
+        This method iterates over the districts dataframe and assigns the corresponding district name
+        to each taxi trip based on the start longitude and latitude. If the districts data is not loaded,
+        it assigns "no district" to all taxi trips.
+        Parameters:
+        -----------
+        taxi_df : pd.DataFrame
+            DataFrame containing taxi trip data with columns 'START_LONG', 'START_LAT', and 'DISTRICT_NAME'.
+        Returns:
+        --------
+        pd.DataFrame
+            Updated DataFrame with the 'DISTRICT_NAME' column assigned based on the start coordinates.
+        Raises:
+        -------
+        None
+        Notes:
+        ------
+        - The method assumes that the 'districts_df' attribute is a DataFrame with columns 'left_long',
+          'right_long', 'lower_lat', 'upper_lat', and 'DISTRICT_NAME'.
+        - The 'DISTRICT_NAME' column in the taxi_df should initially be set to "no district" for proper assignment.
+        - Logging is used to provide information and debugging details about the assignment process.
+        """
+
         if self.districts_df is None:
             logger.error("Districts data not loaded. Cannot assign districts.")
             taxi_df["DISTRICT_NAME"] = "no district"

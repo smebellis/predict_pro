@@ -9,6 +9,9 @@ from src.cluster_districts import (
     cluster_trip_district,
     cluster_trip_time,
     determine_traffic_status,
+    HDBSCAN_Clustering_Aggregated,
+    HDBSCAN_Clustering_Aggregated_optimized,
+    determine_traffic_status_by_quality,
 )
 from src.logger import get_logger
 from src.utils.helper import (
@@ -45,9 +48,11 @@ def main():
         df = read_csv_with_progress(args.output)
         logger.info("CSV file read successfully.")
         clustered_df = cluster_trip_district(df, porto_districts)
-        clustered_df = cluster_trip_time(df)
-        clustered_df = HDBSCAN_Clustering(df)
-        clustered_df = determine_traffic_status(df)
+        clustered_df = cluster_trip_time(clustered_df)
+
+        clustered_df = HDBSCAN_Clustering_Aggregated_optimized(clustered_df)
+        clustered_df = determine_traffic_status_by_quality(clustered_df)
+
         save_dataframe_if_not_exists(clustered_df, args.save)
         logger.info(f"Clustered DataFrame Save to {args.save}")
     except Exception as e:

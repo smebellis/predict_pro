@@ -2,6 +2,7 @@ import ast
 import json
 import math
 import sys
+from collections import Counter, defaultdict
 from typing import Any, List
 
 import numpy as np
@@ -11,10 +12,9 @@ from sklearn.cluster import KMeans
 from sklearn.exceptions import NotFittedError
 from tqdm import tqdm
 
+from districts import DistrictLoadError, load_districts
 from logger import get_logger
 from utils.helper import save_dataframe_if_not_exists
-from districts import load_districts, DistrictLoadError
-from collections import defaultdict, Counter
 
 logger = get_logger(__name__)
 
@@ -508,9 +508,7 @@ def HDBSCAN_Clustering_Aggregated_optimized(df: pd.DataFrame) -> pd.DataFrame:
 
         # Apply HDBSCAN clustering on the aggregated features
         try:
-            clusterer = HDBSCAN(
-                min_cluster_size=min_cluster_size, min_samples=min_cluster_size
-            )
+            clusterer = HDBSCAN(min_cluster_size=10, min_samples=10)
             cluster_labels = clusterer.fit_predict(features)
             membership_probabilities = clusterer.probabilities_
             outlier_scores = clusterer.outlier_scores_
@@ -646,6 +644,25 @@ if __name__ == "__main__":
             ["WEEKDAY", "TIME", "CLUSTER", "DOM", "OUTLIER_SCORE", "MEMBERSHIP_QUALITY"]
         ].head()
     )
+
+    import matplotlib.pyplot as plt
+    import seaborn as sns
+
+    # Histogram of Membership Quality
+    plt.figure(figsize=(10, 6))
+    sns.histplot(sample_df["MEMBERSHIP_QUALITY"], bins=50, kde=True)
+    plt.title("Distribution of Membership Quality")
+    plt.xlabel("Membership Quality")
+    plt.ylabel("Frequency")
+    plt.show()
+
+    # Boxplot by Cluster
+    plt.figure(figsize=(12, 8))
+    sns.boxplot(x="CLUSTER", y="MEMBERSHIP_QUALITY", data=df)
+    plt.title("Membership Quality by Cluster")
+    plt.xlabel("Cluster")
+    plt.ylabel("Membership Quality")
+    plt.show()
     breakpoint()
     # df = determine_traffic_status(df)
 

@@ -2,7 +2,7 @@ import ast
 import json
 import math
 import sys
-from typing import Any
+from typing import Any, List
 
 import numpy as np
 import pandas as pd
@@ -11,9 +11,10 @@ from sklearn.cluster import KMeans
 from sklearn.exceptions import NotFittedError
 from tqdm import tqdm
 
-from src.logger import get_logger
-from src.utils.helper import save_dataframe_if_not_exists
-from src.districts import load_districts, DistrictLoadError
+from logger import get_logger
+from utils.helper import save_dataframe_if_not_exists
+from districts import load_districts, DistrictLoadError
+from collections import defaultdict, Counter
 
 logger = get_logger(__name__)
 
@@ -189,6 +190,355 @@ def determine_traffic_status(
     return df
 
 
+def determine_traffic_status_by_quality(
+    df: pd.DataFrame,
+    quality_column: str = "MEMBERSHIP_QUALITY",
+    cluster_column: str = "CLUSTER",
+    light_threshold: float = 0.4,
+    medium_threshold: float = 0.7,
+    categories: List[str] = ["Light", "Medium", "Heavy"],
+    default_category: str = "Unknown",
+    inplace: bool = False,
+) -> pd.DataFrame:
+    """
+    Determines the traffic status based on the MEMBERSHIP_QUALITY value and manual thresholds for Light, Medium, and Heavy traffic.
+
+    Args:
+        df (pd.DataFrame): A dataframe containing the MEMBERSHIP_QUALITY and CLUSTER values.
+        quality_column (str): The column name for the MEMBERSHIP_QUALITY values.
+        cluster_column (str): The column name for the CLUSTER values.
+        light_threshold (float, optional): The threshold below which traffic is considered 'Light'.
+        medium_threshold (float, optional): The threshold above which traffic is considered 'Heavy'. Values in between are 'Medium'.
+        categories (List[str], optional): List of category labels corresponding to the conditions. Default is ["Light", "Medium", "Heavy"].
+        default_category (str, optional): Label for values that do not meet any condition. Default is "Unknown".
+        inplace (bool, optional): Whether to modify the original dataframe. If False, returns a new dataframe. Default is False.
+
+    Returns:
+        pd.DataFrame: The input dataframe with a new 'TRAFFIC_STATUS' column indicating 'Light', 'Medium', 'Heavy', or 'Unknown' traffic.
+
+    Example:
+        >>> import pandas as pd
+        >>> data = {
+        ...     'WEEKDAY': ['Sunday', 'Thursday', 'Tuesday', 'Wednesday', 'Saturday'],
+        ...     'TIME': [14, 15, 22, 14, 10],
+        ...     'CLUSTER': [0.0, 8.0, -1.0, 0.0, -1.0],
+        ...     'DOM': [0.842566, 0.971883, 0.0, 0.908505, 0.0],
+        ...     'OUTLIER_SCORE': [0.157434, 0.028117, 0.047706, 0.091495, 0.011821],
+        ...     'MEMBERSHIP_QUALITY': [0.709918, 0.944557, 0.0, 0.825381, 0.0]
+        ... }
+        >>> df = pd.DataFrame(data)
+        >>> result_df = determine_traffic_status_by_quality(df)
+        >>> print(result_df)
+            WEEKDAY  TIME  CLUSTER       DOM  OUTLIER_SCORE  MEMBERSHIP_QUALITY TRAFFIC_STATUS
+        0     Sunday    14      0.0  0.842566       0.157434            0.709918          Heavy
+        1  Thursday    15      8.0  0.971883       0.028117            0.944557          Heavy
+        2    Tuesday    22     -1.0  0.000000       0.047706            0.000000        Unknown
+        3  Wednesday    14      0.0  0.908505       0.091495            0.825381          Heavy
+        4   Saturday    10     -1.0  0.000000       0.011821            0.000000        Unknown
+    """
+    # Input validation
+    if quality_column not in df.columns:
+        logger.error(f"The input dataframe must contain the '{quality_column}' column.")
+        raise ValueError(
+            f"The input dataframe must contain the '{quality_column}' column."
+        )
+
+    if cluster_column not in df.columns:
+        logger.error(f"The input dataframe must contain the '{cluster_column}' column.")
+        raise ValueError(
+            f"The input dataframe must contain the '{cluster_column}' column."
+        )
+
+    if not (0 <= light_threshold < medium_threshold <= 1):
+        logger.error(
+            "Threshold values must be between 0 and 1, with light_threshold < medium_threshold."
+        )
+        raise ValueError(
+            "Threshold values must be between 0 and 1, with light_threshold < medium_threshold."
+        )
+
+    if len(categories) != 3:
+        logger.error("The 'categories' list must contain exactly three labels.")
+        raise ValueError("The 'categories' list must contain exactly three labels.")
+
+    logger.info(
+        "Determining traffic status based on MEMBERSHIP_QUALITY and CLUSTER values."
+    )
+
+    # Create a copy if not inplace
+    if not inplace:
+        df = df.copy()
+
+    # Ensure the quality column is numeric
+    original_non_numeric = (
+        df[quality_column].isna().sum()
+    )  # Count NaNs including coercion
+    df[quality_column] = pd.to_numeric(df[quality_column], errors="coerce")
+
+    # Initialize TRAFFIC_STATUS with default_category
+    df["TRAFFIC_STATUS"] = default_category
+
+    # Assign 'Unknown' to rows where CLUSTER is -1.0
+    unknown_mask = df[cluster_column] == -1.0
+    df.loc[unknown_mask, "TRAFFIC_STATUS"] = default_category
+
+    # Create a mask for valid clusters (CLUSTER != -1.0)
+    valid_cluster_mask = ~unknown_mask
+
+    # Define conditions and corresponding choices for valid clusters
+    conditions = [
+        df.loc[valid_cluster_mask, quality_column] < light_threshold,
+        (df.loc[valid_cluster_mask, quality_column] >= light_threshold)
+        & (df.loc[valid_cluster_mask, quality_column] < medium_threshold),
+        df.loc[valid_cluster_mask, quality_column] >= medium_threshold,
+    ]
+    choices = categories
+
+    # Assign traffic status using np.select for valid clusters
+    df.loc[valid_cluster_mask, "TRAFFIC_STATUS"] = np.select(
+        conditions,
+        choices,
+        default=default_category,  # Fallback to 'Unknown' if no condition matches
+    )
+
+    # Count 'Unknown' categories
+    unknown_count = (df["TRAFFIC_STATUS"] == default_category).sum()
+    if unknown_count > 0:
+        logger.warning(
+            f"{unknown_count} rows have '{default_category}' TRAFFIC_STATUS due to invalid or missing MEMBERSHIP_QUALITY values or being outliers."
+        )
+
+    logger.info("Traffic status determination completed.")
+
+    return df
+
+
+def HDBSCAN_Clustering_Aggregated(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply HDBSCAN clustering to polylines grouped by weekday and time, with aggregated membership probabilities.
+
+    Parameters:
+        df (pd.DataFrame): Input dataframe with columns 'WEEKDAY', 'TIME', and 'POLYLINE'.
+
+    Returns:
+        pd.DataFrame: Dataframe with added 'CLUSTER', 'DOM', and 'PROBABILITY' columns.
+    """
+    # Initialize cluster, DOM, PROBABILITY, and OUTLIER_SCORE columns with NaN
+    df["CLUSTER"] = np.nan
+    df["DOM"] = np.nan
+    df["OUTLIER_SCORE"] = np.nan
+
+    # Group the dataframe by WEEKDAY and TIME
+    grouped = df.groupby(["WEEKDAY", "TIME"])
+    logger.info("Starting clustering process for grouped data.")
+
+    for (weekday, time), group in grouped:
+        logger.info(f"Processing group: WEEKDAY={weekday}, TIME={time}")
+
+        # Iterate through each row to extract polylines and apply clustering
+        for index, row in group.iterrows():
+            if pd.isna(row["POLYLINE"]):
+                logger.debug(f"Skipping row {index} due to missing POLYLINE.")
+                continue
+
+            # Extract the list of coordinates from the POLYLINE column
+            try:
+                polyline = ast.literal_eval(row["POLYLINE"])
+            except (ValueError, SyntaxError) as e:
+                logger.warning(
+                    f"Skipping row {index} due to invalid POLYLINE format: {e}"
+                )
+                continue
+
+            if not isinstance(polyline, list) or len(polyline) < 2:
+                logger.debug(
+                    f"Skipping row {index} due to insufficient points in POLYLINE."
+                )
+                continue
+
+            # Convert polyline to numpy array for clustering
+            polyline_points = np.array(polyline)
+            cnt = len(polyline_points)
+
+            # Calculate MinPts as rounded log(cnt), with a minimum of 2
+            min_pts = max(round(math.log(cnt)), 2)
+
+            # If MinPts is less than or equal to 1, clustering is not feasible
+            if min_pts <= 1:
+                logger.debug(f"Skipping row {index} due to MinPts <= 1.")
+                continue
+
+            # Apply HDBSCAN clustering on the polyline
+            try:
+                clusterer = HDBSCAN(min_cluster_size=min_pts, min_samples=min_pts)
+                cluster_labels = clusterer.fit_predict(polyline_points)
+                membership_strengths = clusterer.outlier_scores_
+                membership_probabilities = clusterer.probabilities_
+
+                # Aggregate cluster labels and probabilities
+                # Example: Assign the most frequent cluster and average probability
+                if len(cluster_labels) > 0:
+                    # Most common cluster label
+                    most_common_cluster = Counter(cluster_labels).most_common(1)[0][0]
+
+                    # Average probability
+                    average_probability = np.mean(membership_probabilities)
+                else:
+                    most_common_cluster = np.nan
+                    average_probability = np.nan
+
+                # Assign to DataFrame
+                df.at[index, "CLUSTER"] = most_common_cluster
+
+                df.at[index, "OUTLIER_SCORE"] = (
+                    membership_strengths[-1]
+                    if len(membership_strengths) > 0
+                    else np.nan
+                )
+                df.at[index, "DOM"] = average_probability
+
+                logger.debug(
+                    f"Assigned cluster {most_common_cluster}, DOM {df.at[index, 'DOM']}, "
+                    f"and PROBABILITY {average_probability} for row {index}."
+                )
+
+            except ValueError as e:
+                logger.warning(f"Clustering failed for row {index} with error: {e}")
+
+        # Composite Metrics
+        df["MEMBERSHIP_QUALITY"] = df["DOM"] * (1 - df["OUTLIER_SCORE"])
+    logger.info("Clustering process completed.")
+    return df
+
+
+def HDBSCAN_Clustering_Aggregated_optimized(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Apply HDBSCAN clustering to polylines grouped by WEEKDAY and TIME, with aggregated membership probabilities.
+
+    Parameters:
+        df (pd.DataFrame):
+            - Must contain the following columns:
+                - 'WEEKDAY' (int or str): Represents the day of the week.
+                - 'TIME' (str or appropriate time format): Represents the time slot.
+                - 'POLYLINE' (str): String representation of a list of coordinate pairs, e.g., "[[x1, y1], [x2, y2], ...]".
+
+    Returns:
+        pd.DataFrame: Original DataFrame augmented with the following columns:
+            - 'CLUSTER' (int): Assigned cluster label by HDBSCAN.
+            - 'DOM' (float): Dominant membership probability.
+            - 'PROBABILITY' (float): Aggregated membership probability.
+            - 'OUTLIER_SCORE' (float): Outlier score assigned by HDBSCAN.
+            - 'MEMBERSHIP_QUALITY' (float): Computed as DOM * (1 - OUTLIER_SCORE).
+
+    Example:
+        >>> df = pd.DataFrame({
+        ...     'WEEKDAY': ['Monday', 'Monday'],
+        ...     'TIME': ['Morning', 'Morning'],
+        ...     'POLYLINE': ['[[0, 0], [1, 1], [2, 2]]', '[[10, 10], [11, 11], [12, 12]]']
+        ... })
+        >>> clustered_df = HDBSCAN_Clustering_Aggregated_optimized(df)
+    """
+
+    # Initialize cluster-related columns with NaN
+    df["CLUSTER"] = np.nan
+    df["DOM"] = np.nan
+    df["OUTLIER_SCORE"] = np.nan
+
+    # Group the dataframe by WEEKDAY and TIME
+    grouped = df.groupby(["WEEKDAY", "TIME"])
+    logger.info("Starting clustering process for grouped data.")
+
+    for (weekday, time), group in grouped:
+        logger.info(f"Processing group: WEEKDAY={weekday}, TIME={time}")
+
+        # Extract polylines and preprocess
+        polylines = []
+        valid_indices = []
+        for index, row in group.iterrows():
+            polyline_str = row.get("POLYLINE")
+            if pd.isna(polyline_str):
+                logger.debug(f"Skipping row {index} due to missing POLYLINE.")
+                continue
+
+            try:
+                polyline = ast.literal_eval(polyline_str)
+            except (ValueError, SyntaxError) as e:
+                logger.warning(
+                    f"Skipping row {index} due to invalid POLYLINE format: {e}"
+                )
+                continue
+
+            if not isinstance(polyline, list) or len(polyline) < 2:
+                logger.debug(
+                    f"Skipping row {index} due to insufficient points in POLYLINE."
+                )
+                continue
+
+            polylines.append(polyline)
+            valid_indices.append(index)
+
+        if not polylines:
+            logger.info(
+                f"No valid polylines found for group WEEKDAY={weekday}, TIME={time}."
+            )
+            continue
+
+        # Feature extraction: Example using the mean of coordinates
+        features = []
+        for polyline in polylines:
+            polyline_points = np.array(polyline)
+            mean_coords = polyline_points.mean(axis=0)
+            features.append(mean_coords)
+
+        features = np.array(features)
+
+        # Determine min_cluster_size (fixed or based on group size)
+        group_size = len(features)
+        min_cluster_size = max(
+            round(math.log(group_size + 1)), 2
+        )  # Adding 1 to avoid log(1)=0
+
+        logger.debug(f"Group size: {group_size}, min_cluster_size: {min_cluster_size}")
+
+        if min_cluster_size > group_size:
+            logger.warning(
+                f"min_cluster_size {min_cluster_size} is greater than group size {group_size}. Skipping group."
+            )
+            continue
+
+        # Apply HDBSCAN clustering on the aggregated features
+        try:
+            clusterer = HDBSCAN(
+                min_cluster_size=min_cluster_size, min_samples=min_cluster_size
+            )
+            cluster_labels = clusterer.fit_predict(features)
+            membership_probabilities = clusterer.probabilities_
+            outlier_scores = clusterer.outlier_scores_
+
+            # Assign clustering results to the DataFrame
+            for idx, label, prob, out_score in zip(
+                valid_indices, cluster_labels, membership_probabilities, outlier_scores
+            ):
+                df.at[idx, "CLUSTER"] = label
+                df.at[idx, "DOM"] = prob
+                df.at[idx, "OUTLIER_SCORE"] = out_score
+                logger.debug(
+                    f"Row {idx}: Assigned cluster {label}, DOM {prob}, OUTLIER_SCORE {out_score}."
+                )
+
+        except Exception as e:
+            logger.warning(
+                f"Clustering failed for group WEEKDAY={weekday}, TIME={time} with error: {e}"
+            )
+            continue
+
+    # Compute MEMBERSHIP_QUALITY
+    df["MEMBERSHIP_QUALITY"] = df["DOM"] * (1 - df["OUTLIER_SCORE"])
+
+    logger.info("Clustering process completed.")
+    return df
+
+
 def HDBSCAN_Clustering(df: pd.DataFrame) -> pd.DataFrame:
     """
     Apply HDBSCAN clustering to polylines grouped by weekday and time.
@@ -212,13 +562,13 @@ def HDBSCAN_Clustering(df: pd.DataFrame) -> pd.DataFrame:
 
         # Iterate through each row to extract polylines and apply clustering
         for index, row in group.iterrows():
-            if pd.isna(row["POLYLINE"]):
+            if pd.isna(row["POLYLINE_ORIG"]):
                 logger.debug(f"Skipping row {index} due to missing POLYLINE.")
                 continue
 
             # Extract the list of coordinates from the POLYLINE column
             try:
-                polyline: Any = ast.literal_eval(row["POLYLINE"])
+                polyline: Any = ast.literal_eval(row["POLYLINE_ORIG"])
             except (ValueError, SyntaxError) as e:
                 logger.warning(
                     f"Skipping row {index} due to invalid POLYLINE format: {e}"
@@ -247,7 +597,7 @@ def HDBSCAN_Clustering(df: pd.DataFrame) -> pd.DataFrame:
             try:
                 clusterer = HDBSCAN(min_cluster_size=min_pts, min_samples=min_pts)
                 cluster_labels = clusterer.fit_predict(polyline_points)
-                membership_strengths = clusterer.outlier_scores_
+                membership_strengths = clusterer.probabilities_
 
                 # Assign the results to the DataFrame for the current row
                 df.at[index, "CLUSTER"] = (
@@ -269,42 +619,37 @@ def HDBSCAN_Clustering(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-# Extract 20 coordinate pairs from the polyline column
-def extract_coordinate_pairs(polyline_str, num_pairs=20):
-    # Convert the polyline string to a list of coordinate pairs
-    coordinates = ast.literal_eval(polyline_str)
-
-    # Ensure we do not exceed the number of available pairs
-    num_pairs = min(len(coordinates), num_pairs)
-
-    # Sample evenly spaced pairs if there are more than 20
-    step = max(1, len(coordinates) // num_pairs)
-    sampled_coordinates = coordinates[::step][:num_pairs]
-
-    return sampled_coordinates
-
-
 if __name__ == "__main__":
     np.seterr(divide="ignore", invalid="ignore")
     df = pd.read_csv(
-        "/home/smebellis/ece5831_final_project/processed_data/clustered_taxi_data.csv"
+        "/home/smebellis/ece5831_final_project/processed_data/porto_dataset_processed.csv"
     )
-    PORTO_DISTRICTS = (
-        "/home/smebellis/ece5831_final_project/src/utils/porto_districts.json"
-    )
+
+    sample_df = df.sample(n=50000, random_state=42)
+
+    PORTO_DISTRICTS = "/home/smebellis/ece5831_final_project/data/porto_districts.json"
     # Load Districts Data
     logger.info("Loading district boundary data...")
     try:
         porto_districts = load_districts(PORTO_DISTRICTS)
-    except porto_districts.DistrictLoadError:
+    except DistrictLoadError:
         sys.exit(1)
 
-    df = cluster_trip_district(df, porto_districts)
-    df = cluster_trip_time(df)
-    df = HDBSCAN_Clustering(df)
-    df = determine_traffic_status(df)
+    sample_df = cluster_trip_district(sample_df, porto_districts)
+    sample_df = cluster_trip_time(sample_df)
 
-    save_dataframe_if_not_exists(
-        df,
-        "/home/smebellis/ece5831_final_project/processed_data/post_processing_clustered.csv",
+    sample_df = HDBSCAN_Clustering_Aggregated_optimized(sample_df)
+    sample_df = determine_traffic_status_by_quality(sample_df)
+    # sample_df = working_version_of_HDBSCAN(sample_df)
+    print(
+        sample_df[
+            ["WEEKDAY", "TIME", "CLUSTER", "DOM", "OUTLIER_SCORE", "MEMBERSHIP_QUALITY"]
+        ].head()
     )
+    breakpoint()
+    # df = determine_traffic_status(df)
+
+    # save_dataframe_if_not_exists(
+    #     df,
+    #     "/home/smebellis/ece5831_final_project/processed_data/post_processing_clustered.csv",
+    # )

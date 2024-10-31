@@ -361,8 +361,9 @@ class Preprocessing:
         if df.empty:
             raise IndexError("Cannot extract travel time from an empty DataFrame.")
 
+        tqdm.pandas(desc="Calculating Travel Time")
         # Travel time is 15 seconds multiplied by the number of points in the polyline minus one
-        df["TRAVEL_TIME"] = df[polyline_column].apply(
+        df["TRAVEL_TIME"] = df[polyline_column].progress_apply(
             lambda polyline: (len(polyline) - 1) * 15
         )
 
@@ -403,8 +404,40 @@ class Preprocessing:
         # Make a copy to avoid modifying the original DataFrame
         df_converted = df.copy()
         tqdm.pandas(desc="Converting POLYLINE to a list")
-        df_converted[polyline_column] = df_converted[polyline_column].progress_apply(
+        df_converted["POLYLINE"] = df_converted[polyline_column].progress_apply(
             self.convert_coordinates
+        )
+        return df_converted
+
+    def safe_convert_string_to_list(
+        self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
+    ) -> Optional[list]:
+        """
+        Converts string representations of lists in the specified column to actual lists.
+
+        Args:
+            df (pd.DataFrame): The input DataFrame.
+            polyline_column (str): The column containing string representations of lists.
+
+        Returns:
+            Optional[pd.DataFrame]: The DataFrame with the specified column converted to lists.
+
+        Raises:
+            ValueError: If the specified column does not exist.
+            IndexError: If the DataFrame is empty.
+            ValueError: If a cell in the specified column cannot be parsed.
+        """
+        if polyline_column not in df.columns:
+            raise ValueError(
+                f"The DataFrame does not contain the '{polyline_column}' column."
+            )
+        if df.empty:
+            raise IndexError("Cannot extract travel time from an empty DataFrame.")
+        # Make a copy to avoid modifying the original DataFrame
+        df_converted = df.copy()
+        tqdm.pandas(desc="Converting POLYLINE to a list")
+        df_converted["POLYLINE_LIST"] = df_converted[polyline_column].progress_apply(
+            ast.literal_eval
         )
         return df_converted
 
@@ -423,24 +456,30 @@ class Preprocessing:
             raise IndexError(
                 "The input DataFrame is empty. Returning the DataFrame as is."
             )
+
         extract_df = df.copy()
 
+        # Enable the progress bar for applying functions to the DataFrame
+        tqdm.pandas(desc="Extracting Coordinates")
+
         # Extract Starting latitudes and longitudes
-        extract_df["START_LAT"] = extract_df["POLYLINE"].apply(
-            lambda x: x[0][0] if len(x) > 0 and len(x[0]) > 0 else None
+        extract_df["START_LAT"] = extract_df[polyline_column].progress_apply(
+            lambda x: x[0][0] if len(x) > 0 else None
         )
-        extract_df["START_LONG"] = extract_df["POLYLINE"].apply(
-            lambda x: x[0][1] if len(x) > 0 and len(x[0]) > 0 else None
+        extract_df["START_LONG"] = extract_df[polyline_column].progress_apply(
+            lambda x: x[0][1] if len(x) > 0 else None
         )
-        extract_df["END_LAT"] = extract_df["POLYLINE"].apply(
-            lambda x: x[-1][0] if len(x) > 0 and len(x[0]) > 0 else None
+        # Extract Ending latitudes and longitudes
+        extract_df["END_LAT"] = extract_df[polyline_column].progress_apply(
+            lambda x: x[-1][0] if len(x) > 0 else None
         )
-        extract_df["END_LONG"] = extract_df["POLYLINE"].apply(
-            lambda x: x[-1][1] if len(x) > 0 and len(x[0]) > 0 else None
+        extract_df["END_LONG"] = extract_df[polyline_column].progress_apply(
+            lambda x: x[-1][1] if len(x) > 0 else None
         )
 
-        extract_df["ROUTE"] = extract_df["POLYLINE"].apply(
-            lambda x: x[1:-2][:2] if len(x) > 3 else []
+        # Extract all intermediate coordinates excluding the first and last
+        extract_df["ROUTE"] = extract_df[polyline_column].progress_apply(
+            lambda x: x[1:-1] if len(x) > 2 else []
         )
 
         return extract_df

@@ -57,6 +57,13 @@ def preprocessing_pipeline(
         logger.info("Converting UNIX timestamps to datetime objects.")
         df = preprocessor.convert_timestamp(df, timestamp_column)
 
+        # Copy Dataframe to allow for changes
+        df["POLYLINE_ORIG"] = df["POLYLINE"].copy()
+
+        # # Step 4: Convert POLYLINE columns to a list
+        # logger.info("Safe Convert Coordinates from string to list")
+        # df = preprocessor.safe_convert_string_to_list(df, polyline_column)
+
         # Step 4: Convert POLYLINE coordinates to a list object
         logger.info("Converting Coordinates from string to list object")
         df = preprocessor.convert_polyline_to_list(df, polyline_column)

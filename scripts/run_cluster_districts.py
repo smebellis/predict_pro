@@ -1,27 +1,19 @@
 import os
 import sys
+
 import numpy as np
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
 
-from src.cluster_districts import (
-    HDBSCAN_Clustering,
+from cluster_districts import (
+    HDBSCAN_Clustering_Aggregated_optimized,
     cluster_trip_district,
     cluster_trip_time,
-    determine_traffic_status,
-    HDBSCAN_Clustering_Aggregated,
-    HDBSCAN_Clustering_Aggregated_optimized,
     determine_traffic_status_by_quality,
 )
-from src.logger import get_logger
-from src.utils.helper import (
-    parse_arguments,
-    read_csv_with_progress,
-    save_dataframe_if_not_exists,
-)
-
-from src.districts import load_districts
-
+from districts import load_districts
+from helper import parse_arguments, read_csv_with_progress, save_dataframe_if_not_exists
+from logger import get_logger
 
 # Set up logging
 logger = get_logger(__name__)

@@ -1,7 +1,7 @@
 from Preprocessing import Preprocessing
 
 from districts import load_districts
-from utils.helper import (
+from helper import (
     save_dataframe_if_not_exists,
     save_dataframe_overwrite,
     parse_arguments,
@@ -59,10 +59,6 @@ def preprocessing_pipeline(
 
         # Copy Dataframe to allow for changes
         df["POLYLINE_ORIG"] = df["POLYLINE"].copy()
-
-        # # Step 4: Convert POLYLINE columns to a list
-        # logger.info("Safe Convert Coordinates from string to list")
-        # df = preprocessor.safe_convert_string_to_list(df, polyline_column)
 
         # Step 4: Convert POLYLINE coordinates to a list object
         logger.info("Converting Coordinates from string to list object")

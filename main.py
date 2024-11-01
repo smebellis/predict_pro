@@ -11,7 +11,7 @@ from src.cluster_districts import (
 from src.DataPreprocessing import DataPreprocessing
 from src.logger import get_logger, load_config
 from src.pipeline import run_preprocessing_pipeline
-from src.utils.helper import (
+from helper import (
     file_load,
     parse_arguments,
     read_csv_with_progress,

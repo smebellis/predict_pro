@@ -10,13 +10,32 @@ import pandas as pd
 from hdbscan import HDBSCAN
 from sklearn.cluster import KMeans
 from sklearn.exceptions import NotFittedError
+from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 from tqdm import tqdm
 
 from districts import DistrictLoadError, load_districts
 from logger import get_logger
-from utils.helper import save_dataframe_if_not_exists
+from helper import save_dataframe_if_not_exists
 
 logger = get_logger(__name__)
+
+
+def extract_features(polyline):
+    """
+    Extract meaningful features from a polyline for clustering.
+    """
+    polyline_points = np.array(polyline)
+    if polyline_points.ndim != 2 or polyline_points.shape[1] != 2:
+        return None
+    mean_coords = polyline_points.mean(axis=0)
+    total_length = np.sum(np.linalg.norm(np.diff(polyline_points, axis=0), axis=1))
+    num_turns = len(polyline_points) - 2  # Simplistic turn count
+    bounding_box = polyline_points.max(axis=0) - polyline_points.min(axis=0)
+    variance = polyline_points.var(axis=0).sum()
+    return np.concatenate(
+        [mean_coords, [total_length, num_turns, *bounding_box, variance]]
+    )
 
 
 def cluster_trip_district(df: pd.DataFrame, districts: json) -> pd.DataFrame:
@@ -370,7 +389,7 @@ def HDBSCAN_Clustering_Aggregated(df: pd.DataFrame) -> pd.DataFrame:
 
             # Apply HDBSCAN clustering on the polyline
             try:
-                clusterer = HDBSCAN(min_cluster_size=min_pts, min_samples=min_pts)
+                clusterer = HDBSCAN(min_cluster_size=10, min_samples=5)
                 cluster_labels = clusterer.fit_predict(polyline_points)
                 membership_strengths = clusterer.outlier_scores_
                 membership_probabilities = clusterer.probabilities_
@@ -454,6 +473,8 @@ def HDBSCAN_Clustering_Aggregated_optimized(df: pd.DataFrame) -> pd.DataFrame:
         # Extract polylines and preprocess
         polylines = []
         valid_indices = []
+        features = []
+
         for index, row in group.iterrows():
             polyline_str = row.get("POLYLINE")
             if pd.isna(polyline_str):
@@ -473,30 +494,31 @@ def HDBSCAN_Clustering_Aggregated_optimized(df: pd.DataFrame) -> pd.DataFrame:
                     f"Skipping row {index} due to insufficient points in POLYLINE."
                 )
                 continue
+            feature = extract_features(polyline)
+            if feature is None:
+                logger.debug(
+                    f"Skipping row {index} due to invalid polyline dimensions."
+                )
+                continue
 
             polylines.append(polyline)
             valid_indices.append(index)
+            features.append(feature)
 
-        if not polylines:
+        if not features:
             logger.info(
                 f"No valid polylines found for group WEEKDAY={weekday}, TIME={time}."
             )
             continue
 
-        # Feature extraction: Example using the mean of coordinates
-        features = []
-        for polyline in polylines:
-            polyline_points = np.array(polyline)
-            mean_coords = polyline_points.mean(axis=0)
-            features.append(mean_coords)
-
         features = np.array(features)
 
-        # Determine min_cluster_size (fixed or based on group size)
+        # Determine min_cluster_size based on group size
         group_size = len(features)
-        min_cluster_size = max(
-            round(math.log(group_size + 1)), 2
-        )  # Adding 1 to avoid log(1)=0
+        min_cluster_size = max(round(math.log(group_size + 1)), 2)  # Avoid log(1)=0
+        min_cluster_size = min(
+            min_cluster_size, max(10, int(group_size * 0.1))
+        )  # Ensure it's reasonable
 
         logger.debug(f"Group size: {group_size}, min_cluster_size: {min_cluster_size}")
 
@@ -508,21 +530,17 @@ def HDBSCAN_Clustering_Aggregated_optimized(df: pd.DataFrame) -> pd.DataFrame:
 
         # Apply HDBSCAN clustering on the aggregated features
         try:
-            clusterer = HDBSCAN(min_cluster_size=10, min_samples=10)
+            clusterer = HDBSCAN(
+                min_cluster_size=min_cluster_size, min_samples=5, metric="euclidean"
+            )
             cluster_labels = clusterer.fit_predict(features)
             membership_probabilities = clusterer.probabilities_
             outlier_scores = clusterer.outlier_scores_
 
-            # Assign clustering results to the DataFrame
-            for idx, label, prob, out_score in zip(
-                valid_indices, cluster_labels, membership_probabilities, outlier_scores
-            ):
-                df.at[idx, "CLUSTER"] = label
-                df.at[idx, "DOM"] = prob
-                df.at[idx, "OUTLIER_SCORE"] = out_score
-                logger.debug(
-                    f"Row {idx}: Assigned cluster {label}, DOM {prob}, OUTLIER_SCORE {out_score}."
-                )
+            # Assign clustering results to the DataFrame using vectorized operations
+            df.loc[valid_indices, "CLUSTER"] = cluster_labels
+            df.loc[valid_indices, "DOM"] = membership_probabilities
+            df.loc[valid_indices, "OUTLIER_SCORE"] = outlier_scores
 
         except Exception as e:
             logger.warning(
@@ -638,12 +656,12 @@ if __name__ == "__main__":
 
     sample_df = HDBSCAN_Clustering_Aggregated_optimized(sample_df)
     sample_df = determine_traffic_status_by_quality(sample_df)
-    # sample_df = working_version_of_HDBSCAN(sample_df)
     print(
         sample_df[
             ["WEEKDAY", "TIME", "CLUSTER", "DOM", "OUTLIER_SCORE", "MEMBERSHIP_QUALITY"]
         ].head()
     )
+    breakpoint()
 
     import matplotlib.pyplot as plt
     import seaborn as sns

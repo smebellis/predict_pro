@@ -1,17 +1,21 @@
 # Imports
 import ast
 import json
+import os
+import sys
 
 import cv2
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 import torch
-from sklearn.preprocessing import MinMaxScaler, OneHotEncoder
+from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, LabelEncoder
 from tqdm import tqdm
 
-from helper import plot_route_images
-from logger import get_logger
+# Add the project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
+from src.helper import plot_route_images
+from src.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -162,7 +166,7 @@ class FeatureEngineeringPipeline:
         Returns:
             np.ndarray: A 32x32 grayscale image representing the route.
         """
-        grid_size = 32
+        grid_size = 224
         image = np.zeros((grid_size, grid_size), dtype=np.float32)
 
         if not polyline:
@@ -263,12 +267,28 @@ class FeatureEngineeringPipeline:
 
 # Testing
 if __name__ == "__main__":
-    pipeline = FeatureEngineeringPipeline()
+
     df = pd.read_csv(
         "/home/smebellis/ece5831_final_project/processed_data/clustered_dataset.csv"
     )
-    df = df.sample(n=1000, random_state=42)
-    pipeline.fit(df)
-    route_images, additional_features = pipeline.transform(df)
 
-    plot_route_images(route_images=route_images, num_images=5)
+    df = df.sample(n=1000, random_state=42)
+
+    X = df.drop(columns=["TRAFFIC_STATUS"])
+    y = df["TRAFFIC_STATUS"]
+
+    # Encode the labels
+    label_encoder = LabelEncoder()
+    y_encoded = label_encoder.fit_transform(y)
+
+    # Fit and transform features using your pipeline
+    pipeline = FeatureEngineeringPipeline()
+    route_images_tensor, additional_features_tensor = pipeline.fit_transform(X)
+
+    # Convert the labels to torch tensor
+    traffic_status_tensor = torch.tensor(y_encoded, dtype=torch.long)
+
+    torch.save(route_images_tensor, "route_images_tensor.pt")
+    torch.save(additional_features_tensor, "additional_features_tensor.pt")
+    torch.save(traffic_status_tensor, "traffic_status_tensor.pt")
+    plot_route_images(route_images=route_images_tensor, num_images=5)

@@ -1,13 +1,20 @@
+import argparse
 import logging
-import yaml
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Optional, Union
-import argparse
-from sklearn.cluster import KMeans
 
+import cv2
+import matplotlib.pyplot as plt
 import pandas as pd
+import torch
+import yaml
+from sklearn.cluster import KMeans
 from tqdm import tqdm
+
+from logger import get_logger
+
+logger = get_logger(__name__)
 
 
 def load_config(config_path: str = "config.yaml") -> dict:
@@ -405,6 +412,30 @@ def read_csv_with_progress(file_path, chunksize=100000):
     df = pd.concat(chunks, ignore_index=True)
 
     return df
+
+
+def plot_route_images(route_images: torch.Tensor, num_images: int = 5):
+    """
+    Plots a specified number of route images to verify correctness.
+
+    Args:
+        route_images (torch.Tensor): Tensor of images representing routes.
+        num_images (int): Number of images to display.
+    """
+    logger.info(f"Plotting {num_images} route images for verification.")
+    # Determine the number of images to plot (max is the length of route_images)
+    num_images = min(num_images, route_images.size(0))
+
+    # Set up the plot
+    fig, axes = plt.subplots(1, num_images, figsize=(15, 5))
+    for i in range(num_images):
+        ax = axes[i]
+        ax.imshow(route_images[i].numpy(), cmap="gray")
+        ax.set_title(f"Route {i+1}")
+        ax.axis("off")
+
+    plt.show()
+    logger.info("Displayed route images.")
 
 
 if __name__ == "__main__":

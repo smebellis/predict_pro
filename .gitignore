@@ -123,3 +123,4 @@ dmypy.json
 *.csv
 *.zip
 *.copy
+preprocessed_tensors/*.pt

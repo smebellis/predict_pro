@@ -179,7 +179,7 @@ if __name__ == "__main__":
             raise e
 
         # Test with a small sample, comment out the lines below to run on the whole dataset
-        df = df.sample(n=10000, random_state=42)
+        df = df.sample(n=250000, random_state=42)
 
         # Convert the polyline column from string to list
         df = convert_polyline_to_list(df)

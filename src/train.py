@@ -1,4 +1,6 @@
+import argparse
 import os
+import pickle
 import random
 from typing import Tuple
 
@@ -8,21 +10,17 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
+from sklearn.metrics import classification_report  # Added for detailed metrics
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
-from sklearn.metrics import classification_report  # Added for detailed metrics
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
-import pickle
 
 from AlexnetTrafficCNN import AlexNetTrafficCNN, BasicTrafficCNN
-from TrafficStatus import TrafficStatusCNN
-from logger import get_logger
-
 from FeatureEngineering import FeatureEngineeringPipeline
+from logger import get_logger
+from src.TrafficStatusCNN import TrafficStatusCNN
 from TrafficDataset import TrafficDataset
-
-import argparse
 
 # ============================
 # Configuration and Setup
@@ -170,7 +168,7 @@ def evaluate(model, dataloader, criterion, device):
             all_labels, all_predictions, target_names=class_names, zero_division=0
         )
 
-    logger.info(f"Classification Report:\n{report}")
+    # logger.info(f"Classification Report:\n{report}")
 
     return avg_loss, accuracy
 

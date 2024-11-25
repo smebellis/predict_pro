@@ -7,6 +7,7 @@ from sklearn.preprocessing import LabelEncoder
 from joblib import Parallel, delayed
 from tqdm import tqdm
 import ast
+import pickle
 
 import json
 
@@ -178,7 +179,7 @@ if __name__ == "__main__":
             raise e
 
         # Test with a small sample, comment out the lines below to run on the whole dataset
-        df = df.sample(n=100000, random_state=42)
+        df = df.sample(n=10000, random_state=42)
 
         # Convert the polyline column from string to list
         df = convert_polyline_to_list(df)
@@ -234,7 +235,18 @@ if __name__ == "__main__":
 
     # Encode the labels for training, validation, and test sets
     label_encoder = LabelEncoder()
+
     label_encoder.fit(train_df["TRAFFIC_STATUS"])
+
+    # Create a directory to save pickle files for later processing
+    pickle_dir = "pickle_files"
+    if not os.path.exists(pickle_dir):
+        os.makedirs(pickle_dir)
+        logger.info(f"Created directory: {pickle_dir}")
+    pickle_path = os.path.join(pickle_dir, "label_encoder.pkl")
+    with open(pickle_path, "wb") as f:
+        pickle.dump(label_encoder, f)
+    logger.info(f"LabelEncoder saved at '{pickle_path}'.")
 
     batch_process_pipeline(train_df, pipeline, output_dir, prefix="train")
     batch_process_pipeline(val_df, pipeline, output_dir, prefix="val")

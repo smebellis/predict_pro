@@ -21,6 +21,7 @@ from FeatureEngineering import FeatureEngineeringPipeline
 from logger import get_logger
 from src.TrafficStatusCNN import TrafficStatusCNN
 from TrafficDataset import TrafficDataset
+from plotting import plot_metrics
 
 # ============================
 # Configuration and Setup
@@ -300,7 +301,7 @@ def train(model, dataloader, criterion, optimizer, device):
 
 def main():
     # Device configuration
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using Device: {device}")
 
     # Directory containing the preprocessed tensors
@@ -402,7 +403,9 @@ def main():
         num_additional_features=train_additional_features_tensor.size(1), device=device
     ).to(device)
 
-    criterion = nn.CrossEntropyLoss().to(device)
+    # Compute class weights to deal with class imbalance
+    class_weights = torch.tensor([1.0, 1.0, 5.0, 5.0], dtype=torch.float32).to(device)
+    criterion = nn.CrossEntropyLoss(weight=class_weights).to(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
     # Learning rate scheduler
@@ -414,6 +417,12 @@ def main():
     # Early stopping variables
     best_val_loss = float("inf")
     patience_counter = 0
+
+    # Create lists to store metrics
+    train_accuracies = []
+    val_accuracies = []
+    train_losses = []
+    val_losses = []
 
     # Training loop
     for epoch in range(num_epochs):
@@ -484,12 +493,16 @@ def main():
 
         epoch_loss = running_loss / len(train_loader)
         accuracy = 100 * correct / total
+        train_losses.append(epoch_loss)
+        train_accuracies.append(accuracy)
         logger.info(
             f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Accuracy: {accuracy:.2f}%"
         )
 
         # Validation
         val_loss, val_accuracy = evaluate(model, val_loader, criterion, device)
+        val_losses.append(val_loss)
+        val_accuracies.append(val_accuracy)
         logger.info(
             f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%"
         )
@@ -524,6 +537,39 @@ def main():
 
     test_loss, test_accuracy = evaluate(model, test_loader, criterion, device)
     logger.info(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.2f}%")
+
+    # ============================
+    # Save Training and Validation Metrics for Later Plotting
+    # ============================
+
+    metrics = {
+        "train_accuracies": train_accuracies,
+        "val_accuracies": val_accuracies,
+        "train_losses": train_losses,
+        "val_losses": val_losses,
+    }
+
+    metrics_dir = "metrics"
+    # Check if directory exists
+    if not os.path.exists(metrics_dir):
+        os.makedirs(metrics_dir, exist_ok=True)
+        logger.info(f"Created directory: {metrics_dir}")
+
+    metrics_path = os.path.join(metrics_dir, "metrics.pkl")
+    # Save the metrics for later use
+    with open(metrics_path, "wb") as f:
+        pickle.dump(metrics, f)
+    logger.info(f"Metrics saved at '{metrics_path}'.")
+
+    # ============================
+    # Plot Training and Validation Metrics
+    # ============================
+
+    # Load the metrics
+    with open("metrics.pkl", "rb") as f:
+        metrics = pickle.load(f)
+    logger.info("Loaded the metrics for plotting.")
+    plot_metrics(metrics)
 
 
 if __name__ == "__main__":

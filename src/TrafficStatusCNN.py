@@ -11,7 +11,7 @@ class TrafficStatusCNN(nn.Module):
         self,
         num_additional_features,
         num_classes=4,
-        device="cuda" if torch.cuda.is_available() else "cpu",
+        device="cuda:0" if torch.cuda.is_available() else "cpu",
     ):
         super(TrafficStatusCNN, self).__init__()
         self.device = device

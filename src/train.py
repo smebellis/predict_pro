@@ -13,6 +13,7 @@ import torch.optim as optim
 from sklearn.metrics import classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
+from sklearn.utils.class_weight import compute_class_weight
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from collections import deque
@@ -53,13 +54,13 @@ logger = get_logger(__name__)
 
 parser = argparse.ArgumentParser(description="Train TrafficStatusCNN model.")
 parser.add_argument(
-    "--batch_size", type=int, default=16, help="Batch size for training"
+    "--batch_size", type=int, default=32, help="Batch size for training"
 )
 parser.add_argument(
     "--learning_rate", type=float, default=1e-4, help="Learning rate for optimizer"
 )  # Adjusted learning rate
 parser.add_argument(
-    "--num_epochs", type=int, default=100, help="Number of training epochs"
+    "--num_epochs", type=int, default=50, help="Number of training epochs"
 )
 parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
 parser.add_argument(
@@ -233,69 +234,6 @@ def load_and_concatenate_batches(prefix: str, preprocessed_dir: str) -> torch.Te
     return concatenated_tensor
 
 
-# Training function
-def train(model, dataloader, criterion, optimizer, device):
-    model.train()
-    running_loss = 0.0
-    correct = 0
-    total = 0
-
-    max_grad_norm = 1.0
-
-    for batch_idx, (images, additional_features, labels) in enumerate(dataloader):
-        images = images.unsqueeze(1)  # Add channel dimension
-        images = images.to(device)
-        additional_features = additional_features.to(device)
-        labels = labels.long().to(device)
-        # images = images.repeat(1, 16, 1, 1)  # Repeat to create 16 channels
-
-        # Check for NaNs in inputs
-        if torch.isnan(images).any():
-            logger.error(f"NaN detected in images at batch {batch_idx}")
-        if torch.isnan(additional_features).any():
-            logger.error(f"NaN detected in additional features at batch {batch_idx}")
-        if torch.isnan(labels).any():
-            logger.error(f"NaN detected in labels at batch {batch_idx}")
-        # Zero the parameter gradients
-        optimizer.zero_grad()
-
-        # Forward + backward + optimize
-        outputs = model(images, additional_features)
-
-        # Check for NaNs in outputs
-        # if torch.isnan(outputs).any():
-        #     logger.error(f"NaN detected in outputs at batch {batch_idx}")
-
-        loss = criterion(outputs, labels)
-        # Check for NaNs in loss
-        # if torch.isnan(loss).any():
-        #     logger.error(f"NaN detected in loss at batch {batch_idx}")
-
-        loss.backward()
-        torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
-
-        # Log gradient norms
-        total_norm = 0
-        for p in model.parameters():
-            if p.grad is not None:
-                param_norm = p.grad.data.norm(2)
-                total_norm += param_norm.item() ** 2
-        total_norm = total_norm**0.5
-        logger.debug(f"Gradient Norm: {total_norm}")
-
-        optimizer.step()
-
-        # Statistics
-        running_loss += loss.item()
-        _, predicted = torch.max(outputs, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-
-    epoch_loss = running_loss / len(dataloader)
-    accuracy = 100 * correct / total
-    return epoch_loss, accuracy
-
-
 # ============================
 # Main Training Script
 # ============================
@@ -405,7 +343,14 @@ def main():
     ).to(device)
 
     # Compute class weights to deal with class imbalance
-    class_weights = torch.tensor([1.0, 1.0, 5.0, 5.0], dtype=torch.float32).to(device)
+    # class_weights = torch.tensor([1.0, 1.0, 5.0, 5.0], dtype=torch.float32).to(device)
+    # Dynamic Class Weights
+    labels = train_labels_tensor.cpu().numpy()
+    class_weights = compute_class_weight(
+        "balanced", classes=np.unique(labels), y=labels
+    )
+    class_weights = torch.tensor(class_weights, dtype=torch.float32).to(device)
+
     criterion = nn.CrossEntropyLoss(weight=class_weights).to(device)
     optimizer = optim.Adam(model.parameters(), lr=learning_rate)
 
@@ -419,11 +364,30 @@ def main():
     best_val_loss = float("inf")
     patience_counter = 0
 
-    # Create lists to store metrics
-    train_accuracies = []
-    val_accuracies = []
-    train_losses = []
-    val_losses = []
+    # ============================
+    # Save Metrics Incrementally
+    # ============================
+
+    # Parameters
+    metrics_dir = "metrics"
+    if not os.path.exists(metrics_dir):
+        os.makedirs(metrics_dir, exist_ok=True)
+        logger.info(f"Created directory: {metrics_dir}")
+
+    metrics_path = os.path.join(metrics_dir, "metrics_incremental.pkl")
+
+    # Initialize or load existing metrics
+    if os.path.exists(metrics_path):
+        with open(metrics_path, "rb") as f:
+            metrics = pickle.load(f)
+        logger.info("Loaded existing metrics for continuation.")
+    else:
+        metrics = {
+            "train_accuracies": [],
+            "val_accuracies": [],
+            "train_losses": [],
+            "val_losses": [],
+        }
 
     # Parameters
     max_saved_models = 5  # Number of recent models to keep
@@ -484,9 +448,10 @@ def main():
                     param_norm = p.grad.data.norm(2)
                     total_norm += param_norm.item() ** 2
             total_norm = total_norm**0.5
-            logger.debug(
-                f"Epoch [{epoch+1}/{num_epochs}] Batch [{batch_idx+1}/{len(train_loader)}] - Gradient Norm: {total_norm:.4f}"
-            )
+            if batch_idx % 10 == 0:
+                logger.debug(
+                    f"Epoch [{epoch+1}/{num_epochs}] Batch [{batch_idx+1}/{len(train_loader)}] - Gradient Norm: {total_norm:.4f}"
+                )
 
             optimizer.step()
 
@@ -498,16 +463,16 @@ def main():
 
         epoch_loss = running_loss / len(train_loader)
         accuracy = 100 * correct / total
-        train_losses.append(epoch_loss)
-        train_accuracies.append(accuracy)
+        metrics["train_losses"].append(epoch_loss)
+        metrics["train_accuracies"].append(accuracy)
         logger.info(
             f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Accuracy: {accuracy:.2f}%"
         )
 
         # Validation
         val_loss, val_accuracy = evaluate(model, val_loader, criterion, device)
-        val_losses.append(val_loss)
-        val_accuracies.append(val_accuracy)
+        metrics["val_losses"].append(val_loss)
+        metrics["val_accuracies"].append(val_accuracy)
         logger.info(
             f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%"
         )
@@ -528,22 +493,32 @@ def main():
                 f"No improvement in Validation Loss. Patience: {patience_counter}/{patience}"
             )
 
+        # Save metrics incrementally after every epoch
+        with open(metrics_path, "wb") as f:
+            pickle.dump(metrics, f)
+        logger.info(f"Metrics incrementally saved at '{metrics_path}'.")
+
         # Save the current model with a timestamp
-        timestamp = time.strftime("%Y%m%d_%H%M%S")
+        os.makedirs("models", exist_ok=True)
+        timestamp = time.strftime("%Y%m%d_%H%M")
         current_model_path = os.path.join("models", f"model_{timestamp}.pth")
         torch.save(model.state_dict(), current_model_path)
         logger.info(f"Model saved with timestamp: {current_model_path}")
 
         # Rotate saved models
-        saved_models_queue.append(current_model_path)
-        if len(saved_models_queue) > max_saved_models:
-            oldest_model = saved_models_queue.popleft()
+        if len(saved_models_queue) == max_saved_models:
+            # If deque is full, the oldest model will be removed from the deque.
+            # Get the oldest model path before appending the new one.
+            oldest_model = saved_models_queue[0]
             if os.path.exists(oldest_model) and oldest_model != best_model_path:
                 os.remove(oldest_model)
-                logger.info(f"Oldest model removed: {oldest_model}")
-            if patience_counter >= patience:
-                logger.info("Early stopping triggered.")
-                break
+                logger.info(f"Oldest model removed from disk: {oldest_model}")
+
+        # Append the new model path to the deque
+        saved_models_queue.append(current_model_path)
+        if patience_counter >= patience:
+            logger.info("Early stopping triggered.")
+            break
 
     # Load the best model state for further use (e.g., testing or inference)
     model.load_state_dict(torch.load(best_model_path))
@@ -555,29 +530,6 @@ def main():
 
     test_loss, test_accuracy = evaluate(model, test_loader, criterion, device)
     logger.info(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.2f}%")
-
-    # ============================
-    # Save Training and Validation Metrics for Later Plotting
-    # ============================
-
-    metrics = {
-        "train_accuracies": train_accuracies,
-        "val_accuracies": val_accuracies,
-        "train_losses": train_losses,
-        "val_losses": val_losses,
-    }
-
-    metrics_dir = "metrics"
-    # Check if directory exists
-    if not os.path.exists(metrics_dir):
-        os.makedirs(metrics_dir, exist_ok=True)
-        logger.info(f"Created directory: {metrics_dir}")
-
-    metrics_path = os.path.join(metrics_dir, "metrics.pkl")
-    # Save the metrics for later use
-    with open(metrics_path, "wb") as f:
-        pickle.dump(metrics, f)
-    logger.info(f"Metrics saved at '{metrics_path}'.")
 
     # ============================
     # Plot Training and Validation Metrics

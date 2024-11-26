@@ -3,13 +3,14 @@ import sys
 
 import numpy as np
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+# Add the project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from districts import load_districts
-from helper import parse_arguments
-from pipeline import preprocessing_pipeline
-from logger import get_logger
-from Preprocessing import Preprocessing
+from src.districts import load_districts
+from src.helper import parse_arguments
+from src.pipeline import preprocessing_pipeline
+from src.logger import get_logger
+from src.Preprocessing import Preprocessing
 
 # Set up logging
 logger = get_logger(__name__)

@@ -69,13 +69,18 @@ def parse_arguments():
 
     # Required arguments
     parser.add_argument(
-        "--input", "-i", required=True, help="Path to the input CSV file."
+        "--input",
+        "-i",
+        default="/home/smebellis/ece5831_final_project/data/train.csv",
+        help="Path to the input CSV file.",
     )
     parser.add_argument(
         "--output", "-o", required=True, help="Path to save the processed CSV file."
     )
     parser.add_argument(
-        "--districts_path", required=True, help="Path to the districts JSON file."
+        "--districts_path",
+        default="/home/smebellis/ece5831_final_project/data/porto_districts.json",
+        help="Path to the districts JSON file.",
     )
 
     # Optional arguments

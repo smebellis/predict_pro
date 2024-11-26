@@ -17,7 +17,7 @@ from tqdm import tqdm
 # Register tqdm with pandas
 tqdm.pandas()
 
-from logger import get_logger
+from src.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -377,18 +377,21 @@ class Preprocessing:
         """
         return [(lat, long) for (long, lat) in json.loads(string)]
 
-    def convert_polyline_to_list(
+    def parse_and_correct_polyline_coordinates(
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
-    ) -> Optional[list]:
+    ) -> Optional[pd.DataFrame]:
         """
-        Converts string representations of lists in the specified column to actual lists.
+        Parses and corrects coordinates in the specified column of the DataFrame.
+        Converts string representations of lists into actual lists and swaps
+        latitude and longitude values as per standard convention.
 
         Args:
             df (pd.DataFrame): The input DataFrame.
             polyline_column (str): The column containing string representations of lists.
 
         Returns:
-            Optional[pd.DataFrame]: The DataFrame with the specified column converted to lists.
+            Optional[pd.DataFrame]: The DataFrame with the specified column converted to lists
+            and corrected coordinates.
 
         Raises:
             ValueError: If the specified column does not exist.
@@ -403,7 +406,7 @@ class Preprocessing:
             raise IndexError("Cannot extract travel time from an empty DataFrame.")
         # Make a copy to avoid modifying the original DataFrame
         df_converted = df.copy()
-        tqdm.pandas(desc="Converting POLYLINE to a list")
+        tqdm.pandas(desc="Parsing and correcting POLYLINE coordinates")
         df_converted["POLYLINE"] = df_converted[polyline_column].progress_apply(
             self.convert_coordinates
         )

@@ -1,7 +1,7 @@
-from Preprocessing import Preprocessing
+from src.Preprocessing import Preprocessing
 
-from districts import load_districts
-from helper import (
+from src.districts import load_districts
+from src.helper import (
     save_dataframe_if_not_exists,
     save_dataframe_overwrite,
     parse_arguments,
@@ -10,7 +10,7 @@ from helper import (
 import pandas as pd
 from typing import Dict
 
-from logger import get_logger
+from src.logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -32,7 +32,10 @@ def preprocessing_pipeline(
     try:
         logger.info(f"Loading data from {input_file}")
         df = read_csv_with_progress(input_file)
-        # df = pd.read_csv(input_file)  # add nrows=number to process a smaller sample
+
+        # For testing purposes, uncomment line to use a small sample
+        df = df.sample(n=5000, random_state=42)
+
         logger.info(f"Loaded data from {input_file}.")
     except FileNotFoundError:
         logger.error(f"Input file {input_file} not found.")
@@ -56,14 +59,11 @@ def preprocessing_pipeline(
         # Step 3: Convert UNIX timestamps to datetime
         logger.info("Converting UNIX timestamps to datetime objects.")
         df = preprocessor.convert_timestamp(df, timestamp_column)
-
-        # Copy Dataframe to allow for changes
-        df["POLYLINE_ORIG"] = df["POLYLINE"].copy()
-
-        # Step 4: Convert POLYLINE coordinates to a list object
-        logger.info("Converting Coordinates from string to list object")
-        df = preprocessor.convert_polyline_to_list(df, polyline_column)
-
+        breakpoint()
+        # Step 4: Parse and correct PolyLine Coordinates
+        logger.info("Parsing and correcting POLYLINE Coordinates")
+        df = preprocessor.parse_and_correct_polyline_coordinates(df, polyline_column)
+        breakpoint()
         # Step 5: Extract Starting and Ending locations from POLYLINE
         logger.info("Extracting Starting and Ending locations from Polyline column.")
         df = preprocessor.extract_coordinates(df, polyline_column)

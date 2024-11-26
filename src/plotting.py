@@ -2,7 +2,8 @@ import matplotlib.pyplot as plt
 import pickle
 import torch
 from logger import get_logger
-from train import evaluate
+
+# from train import evaluate
 from TrafficStatusCNN import TrafficStatusCNN
 
 logger = get_logger(__name__)
@@ -41,26 +42,26 @@ def plot_metrics(metrics):
     plt.show()
 
 
-def reload_and_evaluate_model(
-    model_path, train_loader, val_loader, criterion, device, label_encoder
-):
-    # Reload the model
-    model = TrafficStatusCNN(num_additional_features=10, device=device)
-    model.load_state_dict(torch.load(model_path))
-    model.to(device)
+# def reload_and_evaluate_model(
+#     model_path, train_loader, val_loader, criterion, device, label_encoder
+# ):
+#     # Reload the model
+#     model = TrafficStatusCNN(num_additional_features=10, device=device)
+#     model.load_state_dict(torch.load(model_path))
+#     model.to(device)
 
-    # Recompute metrics for training and validation sets
-    train_loss, train_accuracy = evaluate(
-        model, train_loader, criterion, device, label_encoder
-    )
-    val_loss, val_accuracy = evaluate(
-        model, val_loader, criterion, device, label_encoder
-    )
+#     # Recompute metrics for training and validation sets
+#     train_loss, train_accuracy = evaluate(
+#         model, train_loader, criterion, device, label_encoder
+#     )
+#     val_loss, val_accuracy = evaluate(
+#         model, val_loader, criterion, device, label_encoder
+#     )
 
-    logger.info(
-        f"Training Accuracy: {train_accuracy:.2f}%, Validation Accuracy: {val_accuracy:.2f}%"
-    )
-    return train_loss, train_accuracy, val_loss, val_accuracy
+#     logger.info(
+#         f"Training Accuracy: {train_accuracy:.2f}%, Validation Accuracy: {val_accuracy:.2f}%"
+#     )
+#     return train_loss, train_accuracy, val_loss, val_accuracy
 
 
 if __name__ == "__main__":

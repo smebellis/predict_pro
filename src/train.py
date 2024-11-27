@@ -24,13 +24,10 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.class_weight import compute_class_weight
 from torch.utils.data import DataLoader, Dataset
-from torchvision import transforms
 
-from AlexnetTrafficCNN import AlexNetTrafficCNN, BasicTrafficCNN
-from FeatureEngineering import FeatureEngineeringPipeline
 from logger import get_logger
-from plotting import plot_metrics
-from src.TrafficStatusCNN import TrafficStatusCNN
+
+from TrafficStatusCNN import TrafficStatusCNN
 from TrafficDataset import TrafficDataset
 
 # ============================
@@ -67,7 +64,7 @@ parser.add_argument(
     "--learning_rate", type=float, default=1e-4, help="Learning rate for optimizer"
 )  # Adjusted learning rate
 parser.add_argument(
-    "--num_epochs", type=int, default=50, help="Number of training epochs"
+    "--num_epochs", type=int, default=100, help="Number of training epochs"
 )
 parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
 parser.add_argument(

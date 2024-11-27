@@ -520,7 +520,8 @@ def traffic_congestion_indicator(df: pd.DataFrame) -> pd.DataFrame:
     """
     logger.info("Calculating Traffic congestion")
     # Drop rows where TRIP_DISTANCE is 0 or very small (e.g., less than 1e-5)
-    df = df[df["TRIP_DISTANCE"] > 1e-5]
+    # Create a new DataFrame copy to avoid SettingWithCopyWarning
+    df = df[df["TRIP_DISTANCE"] > 1e-5].copy()
 
     # Calculate congestion indicator
     df["CONGESTION"] = df["TRAVEL_TIME"] / df["TRIP_DISTANCE"]

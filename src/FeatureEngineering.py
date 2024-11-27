@@ -11,9 +11,11 @@ import pandas as pd
 import torch
 from sklearn.preprocessing import MinMaxScaler, OneHotEncoder, LabelEncoder
 from sklearn.impute import SimpleImputer
+from sklearn.decomposition import PCA
 from tqdm import tqdm
 import gc
 import tracemalloc
+import swifter
 
 # Add the project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
@@ -29,24 +31,43 @@ class FeatureEngineeringPipeline:
     scaling numerical features, and converting polyline data to image representations.
 
     Attributes:
+        scaler (MinMaxScaler): Scaler for numerical features.
+        numerical_imputer (SimpleImputer): Imputer for numerical features.
+        categorical_imputer (SimpleImputer): Imputer for categorical features.
+        numerical_features (list): List of numerical feature names.
+        categorical_features (list): List of categorical feature names.
         weekday_encoder (OneHotEncoder): Encoder for the 'WEEKDAY' feature.
         month_encoder (OneHotEncoder): Encoder for the 'MONTH' feature.
         cluster_encoder (OneHotEncoder): Encoder for 'DISTRICT_CLUSTER' and 'TIME_CLUSTER' features.
-        scaler (MinMaxScaler): Scaler for numerical features.
     """
 
     def __init__(self):
-        # Initialize encoders and scalers here
-        self.weekday_encoder = OneHotEncoder()
-        self.month_encoder = OneHotEncoder()
 
-        self.cluster_encoder = OneHotEncoder(handle_unknown="ignore")
+        # Initialize scaler and imputers here
         self.scaler = MinMaxScaler()
-
-        # Initialize imputers
-        self.categorical_imputer = SimpleImputer(strategy="most_frequent")
         self.numerical_imputer = SimpleImputer(strategy="mean")
-        logger.info("Initialized FeatureEngineeringPipeline with encoders and scaler.")
+        self.categorical_imputer = SimpleImputer(strategy="most_frequent")
+        self.numerical_features = ["TRAVEL_TIME", "TRIP_DISTANCE", "AVG_SPEED", "TIME"]
+        self.categorical_features = [
+            "WEEKDAY",
+            "MONTH",
+            "DISTRICT_CLUSTER",
+            "TIME_CLUSTER",
+        ]
+
+        # Initialize encoders
+        self.weekday_encoder = OneHotEncoder(handle_unknown="ignore")
+        self.month_encoder = OneHotEncoder(handle_unknown="ignore")
+        self.cluster_encoder = OneHotEncoder(handle_unknown="ignore")
+
+        # Initialize PCA
+        self.pca = PCA(
+            n_components=10
+        )  # Set n_components based on desired dimensionality
+
+        logger.info(
+            "Initialized FeatureEngineeringPipeline with scaler, imputers, encoders, and PCA."
+        )
 
     def fit(self, dataframe):
         """
@@ -57,27 +78,41 @@ class FeatureEngineeringPipeline:
         """
         logger.info("Fitting imputers, encoders, and scaler on the training data.")
 
-        # Impute categorical features
-        categorical_features = dataframe[
-            ["WEEKDAY", "MONTH", "DISTRICT_CLUSTER", "TIME_CLUSTER"]
-        ]
-        self.categorical_imputer.fit(categorical_features)
-        imputed_categorical = self.categorical_imputer.transform(categorical_features)
-
         # Impute numerical features
-        numerical_features = dataframe[["DOM", "OUTLIER_SCORE", "MEMBERSHIP_QUALITY"]]
-        self.numerical_imputer.fit(numerical_features)
-        imputed_numerical = self.numerical_imputer.transform(numerical_features)
+        numerical_data = dataframe[self.numerical_features]
+        self.numerical_imputer.fit(numerical_data)
+        imputed_numerical = self.numerical_imputer.transform(numerical_data)
+
+        # Fit scaler on imputed numerical features
+        self.scaler.fit(imputed_numerical)
+
+        # Impute categorical features
+        categorical_data = dataframe[self.categorical_features]
+        self.categorical_imputer.fit(categorical_data)
+        imputed_categorical = self.categorical_imputer.transform(categorical_data)
 
         # Fit encoders on imputed categorical features
         self.weekday_encoder.fit(imputed_categorical[:, 0].reshape(-1, 1))
         self.month_encoder.fit(imputed_categorical[:, 1].reshape(-1, 1))
         self.cluster_encoder.fit(imputed_categorical[:, 2:4])
 
-        # Fit scaler on imputed numerical features
-        self.scaler.fit(imputed_numerical)
+        # Fit PCA on concatenated categorical features
+        weekday_encoded = self.weekday_encoder.transform(
+            imputed_categorical[:, 0].reshape(-1, 1)
+        ).toarray()
+        month_encoded = self.month_encoder.transform(
+            imputed_categorical[:, 1].reshape(-1, 1)
+        ).toarray()
+        cluster_encoded = self.cluster_encoder.transform(
+            imputed_categorical[:, 2:4]
+        ).toarray()
 
-        logger.info("Completed fitting encoders and scaler.")
+        concatenated_features = np.concatenate(
+            [weekday_encoded, month_encoded, cluster_encoded], axis=1
+        )
+        self.pca.fit(concatenated_features)
+
+        logger.info("Completed fitting encoders, scaler, and PCA.")
 
     def transform(self, dataframe):
         """
@@ -95,10 +130,16 @@ class FeatureEngineeringPipeline:
 
         logger.info("Starting transformation of the dataframe.")
 
+        # Impute numerical features
+        numerical_data = dataframe[self.numerical_features]
+        imputed_numerical = self.numerical_imputer.transform(numerical_data)
+
+        # Normalize numerical features
+        logger.debug("Scaling numerical features.")
+        scaled_features = self.scaler.transform(imputed_numerical)
+
         # Impute categorical features
-        categorical_features = dataframe[
-            ["WEEKDAY", "MONTH", "DISTRICT_CLUSTER", "TIME_CLUSTER"]
-        ]
+        categorical_features = dataframe[self.categorical_features]
         imputed_categorical = self.categorical_imputer.transform(categorical_features)
 
         # One-Hot Encode categorical features
@@ -113,13 +154,12 @@ class FeatureEngineeringPipeline:
             imputed_categorical[:, 2:4]
         ).toarray()
 
-        # Impute numerical features
-        numerical_features = dataframe[["DOM", "OUTLIER_SCORE", "MEMBERSHIP_QUALITY"]]
-        imputed_numerical = self.numerical_imputer.transform(numerical_features)
-
-        # Normalize numerical features
-        logger.debug("Scaling numerical features.")
-        scaled_features = self.scaler.transform(imputed_numerical)
+        # Concatenate and apply PCA
+        concatenated_features = np.concatenate(
+            [weekday_encoded, month_encoded, cluster_encoded], axis=1
+        )
+        logger.debug("Applying PCA to reduce dimensionality of encoded features.")
+        pca_features = self.pca.transform(concatenated_features)
 
         # Sin-Cosine Encoding for time feature
         logger.debug("Applying sin-cos encoding to the 'TIME' feature.")
@@ -147,9 +187,7 @@ class FeatureEngineeringPipeline:
         # Verify array types and dimensions before concatenation
         logger.debug("Verifying array types and dimensions before concatenation.")
         feature_arrays = {
-            "weekday_encoded": weekday_encoded,
-            "month_encoded": month_encoded,
-            "cluster_encoded": cluster_encoded,
+            "pca_features": pca_features,
             "scaled_features": scaled_features,
             "time_encoded": time_encoded,
         }
@@ -168,9 +206,7 @@ class FeatureEngineeringPipeline:
             logger.info("Concatenating all engineered features.")
             additional_features = np.concatenate(
                 [
-                    weekday_encoded,
-                    month_encoded,
-                    cluster_encoded,
+                    pca_features,
                     scaled_features,
                     time_encoded,
                 ],
@@ -185,9 +221,9 @@ class FeatureEngineeringPipeline:
             raise
 
         # Convert to torch tensors
-        logger.info("Converting features to torch tensors.")
+        logger.info("Converting features to torch tensors and normalize tensors.")
         route_images_tensor = torch.stack(
-            [torch.tensor(img, dtype=torch.float32) for img in route_images]
+            [torch.tensor(img, dtype=torch.float32) / 255.0 for img in route_images]
         )
         additional_features_tensor = torch.tensor(
             additional_features, dtype=torch.float32
@@ -374,7 +410,10 @@ if __name__ == "__main__":
     )
 
     df = df.sample(n=10000, random_state=42)
-
+    # More optimized version of converting POLYLINE string into List
+    df["POLYLINE"] = df["POLYLINE"].swifter.apply(
+        lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+    )
     X = df.drop(columns=["TRAFFIC_STATUS"])
     y = df["TRAFFIC_STATUS"]
 

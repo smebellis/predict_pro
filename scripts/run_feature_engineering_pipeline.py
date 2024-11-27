@@ -84,34 +84,37 @@ def batch_process_pipeline(
 
         logger.info(f"Processing batch {start_idx} to {end_idx} for {prefix} set.")
 
-        # Convert polylines to images and additional features
-        route_images_tensor, additional_features_tensor = pipeline.transform(batch_df)
+        with torch.no_grad():
+            # Convert polylines to images and additional features
+            route_images_tensor, additional_features_tensor = pipeline.transform(
+                batch_df
+            )
 
-        # Encode labels
-        labels_tensor = torch.tensor(
-            label_encoder.transform(batch_df["TRAFFIC_STATUS"]), dtype=torch.long
-        )
+            # Encode labels
+            labels_tensor = torch.tensor(
+                label_encoder.transform(batch_df["TRAFFIC_STATUS"]), dtype=torch.long
+            )
 
-        # Save the tensors to disk
-        torch.save(
-            route_images_tensor,
-            os.path.join(
-                output_dir, f"{prefix}_route_images_tensor_{start_idx}_{end_idx}.pt"
-            ),
-        )
-        torch.save(
-            additional_features_tensor,
-            os.path.join(
-                output_dir,
-                f"{prefix}_additional_features_tensor_{start_idx}_{end_idx}.pt",
-            ),
-        )
-        torch.save(
-            labels_tensor,
-            os.path.join(
-                output_dir, f"{prefix}_labels_tensor_{start_idx}_{end_idx}.pt"
-            ),
-        )
+            # Save the tensors to disk
+            torch.save(
+                route_images_tensor,
+                os.path.join(
+                    output_dir, f"{prefix}_route_images_tensor_{start_idx}_{end_idx}.pt"
+                ),
+            )
+            torch.save(
+                additional_features_tensor,
+                os.path.join(
+                    output_dir,
+                    f"{prefix}_additional_features_tensor_{start_idx}_{end_idx}.pt",
+                ),
+            )
+            torch.save(
+                labels_tensor,
+                os.path.join(
+                    output_dir, f"{prefix}_labels_tensor_{start_idx}_{end_idx}.pt"
+                ),
+            )
 
         logger.info(f"Saved batch {start_idx} to {end_idx} for {prefix} set.")
 

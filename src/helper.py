@@ -439,6 +439,7 @@ def plot_route_images(route_images: torch.Tensor, num_images: int = 5):
         ax.set_title(f"Route {i+1}")
         ax.axis("off")
 
+    plt.savefig(os.path.join("plots", "route_images_example.png"))
     plt.show()
     logger.info("Displayed route images.")
 

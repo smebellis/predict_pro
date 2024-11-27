@@ -1,5 +1,6 @@
 import pandas as pd
 import torch
+import swifter
 import os
 import sys
 from sklearn.model_selection import train_test_split
@@ -26,7 +27,7 @@ input_path = (
     "/home/smebellis/ece5831_final_project/processed_data/clustered_dataset.csv"
 )
 output_path = (
-    "/home/smebellis/ece5831_final_project/processed_data/postprocessed_dataset.csv"
+    "/home/smebellis/ece5831_final_project/processed_data/post_feature_engineered.csv"
 )
 
 
@@ -182,24 +183,12 @@ if __name__ == "__main__":
         # df = df.sample(n=500000, random_state=42)
 
         # Convert the polyline column from string to list
-        df = convert_polyline_to_list(df)
+        # df = convert_polyline_to_list(df)
 
-        # # Save the dataset to avoid reprocessing next time
-        # try:
-        #     df.to_csv(output_path, index=False)
-        #     logger.info("Saved the polyline converted dataset as a CSV.")
-        # except FileNotFoundError:
-        #     logger.error(
-        #         "The specified directory does not exist. Please check the file path."
-        #     )
-        # except PermissionError:
-        #     logger.error(
-        #         "Permission denied. Ensure the script has write access to the specified path."
-        #     )
-        # except OSError as e:
-        #     logger.error(f"An OS error occurred: {e}")
-        # except Exception as e:
-        #     logger.error(f"An unexpected error occurred: {e}")
+        # More optimized version of converting POLYLINE string into List
+        df["POLYLINE"] = df["POLYLINE"].swifter.apply(
+            lambda x: ast.literal_eval(x) if isinstance(x, str) else x
+        )
 
     # Split the dataset into training, validation, and test sets
     logger.info("Spliting the dataset into training, validation, and test sets.")
@@ -232,6 +221,7 @@ if __name__ == "__main__":
     if not os.path.exists(pickle_dir):
         os.makedirs(pickle_dir)
         logger.info(f"Created directory: {pickle_dir}")
+
     pickle_path = os.path.join(pickle_dir, "label_encoder.pkl")
     with open(pickle_path, "wb") as f:
         pickle.dump(label_encoder, f)

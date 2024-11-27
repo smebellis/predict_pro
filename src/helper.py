@@ -74,9 +74,7 @@ def parse_arguments():
         default="/home/smebellis/ece5831_final_project/data/train.csv",
         help="Path to the input CSV file.",
     )
-    parser.add_argument(
-        "--output", "-o", required=True, help="Path to save the processed CSV file."
-    )
+    parser.add_argument("--output", "-o", help="Path to save the processed CSV file.")
     parser.add_argument(
         "--districts_path",
         default="/home/smebellis/ece5831_final_project/data/porto_districts.json",

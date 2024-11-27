@@ -66,7 +66,7 @@ def setup_logging(config: Dict) -> None:
     # Check if handlers are already set up to prevent duplicates
     if not root_logger.handlers:
         formatter = logging.Formatter(
-            "%(asctime)s - %(name)s - %(levelname)s - %(message)s",
+            "%(asctime)s - %(name)s - %(funcName)s - %(levelname)s - %(message)s",
             datefmt="%Y-%m-%d %H:%M:%S",
         )
 

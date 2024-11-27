@@ -14,9 +14,9 @@ from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
 from tqdm import tqdm
 
-from districts import DistrictLoadError, load_districts
-from logger import get_logger
-from helper import save_dataframe_if_not_exists
+from src.districts import DistrictLoadError, load_districts
+from src.logger import get_logger
+from src.helper import save_dataframe_if_not_exists
 
 logger = get_logger(__name__)
 
@@ -489,6 +489,13 @@ def HDBSCAN_Clustering_Aggregated_optimized(df: pd.DataFrame) -> pd.DataFrame:
                 )
                 continue
 
+            # polyline = row.get("POLYLINE")
+            # if pd.isna(polyline) or not isinstance(polyline, list):
+            #     logger.debug(
+            #         f"Skipping row {index} due to missing or invalid POLYLINE."
+            #     )
+            #     continue
+
             if not isinstance(polyline, list) or len(polyline) < 2:
                 logger.debug(
                     f"Skipping row {index} due to insufficient points in POLYLINE."
@@ -638,7 +645,7 @@ def HDBSCAN_Clustering(df: pd.DataFrame) -> pd.DataFrame:
 if __name__ == "__main__":
     np.seterr(divide="ignore", invalid="ignore")
     df = pd.read_csv(
-        "/home/smebellis/ece5831_final_project/processed_data/porto_dataset_processed.csv"
+        "/home/smebellis/ece5831_final_project/processed_data/test_new_function.csv"
     )
 
     sample_df = df.sample(n=50000, random_state=42)

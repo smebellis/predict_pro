@@ -3,17 +3,22 @@ import sys
 
 import numpy as np
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "src")))
+# Add the project root to sys.path
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from cluster_districts import (
+from src.cluster_districts import (
     HDBSCAN_Clustering_Aggregated_optimized,
     cluster_trip_district,
     cluster_trip_time,
     determine_traffic_status_by_quality,
 )
-from districts import load_districts
-from helper import parse_arguments, read_csv_with_progress, save_dataframe_if_not_exists
-from logger import get_logger
+from src.districts import load_districts
+from src.helper import (
+    parse_arguments,
+    read_csv_with_progress,
+    save_dataframe_if_not_exists,
+)
+from src.logger import get_logger
 
 # Set up logging
 logger = get_logger(__name__)
@@ -37,7 +42,8 @@ def main():
         sys.exit(1)
 
     try:
-        df = read_csv_with_progress(args.output)
+        df = read_csv_with_progress(args.input)
+
         logger.info("CSV file read successfully.")
         clustered_df = cluster_trip_district(df, porto_districts)
         clustered_df = cluster_trip_time(clustered_df)

@@ -336,6 +336,73 @@ class Preprocessing:
 
         return converted_df
 
+    def calculate_trip_distance(
+        self,
+        df: pd.DataFrame,
+        polyline_column: str = "POLYLINE",
+        distance_column: str = "TRIP_DISTANCE",
+        unit: str = "km",
+    ) -> pd.DataFrame:
+        """
+        Calculate the total distance of each trip based on the polyline data.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame with a 'POLYLINE' column.
+        polyline_column : str, optional
+            The name of the column containing the polyline data (default is "POLYLINE").
+        distance_column : str, optional
+            The name of the column to store the calculated trip distance (default is "TRIP_DISTANCE").
+        unit : str, optional
+            Unit for distance calculation ("km" or "miles"). Defaults to "km".
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame with a new column containing the total distance of each trip.
+
+        Raises:
+        ------
+        ValueError
+            If the specified polyline column does not exist or contain invalid data.
+        """
+        logger.info("Starting trip distance calculation.")
+
+        if polyline_column not in df.columns:
+            logger.error(
+                f"The DataFrame does not contain the '{polyline_column}' column."
+            )
+            raise ValueError(
+                f"The DataFrame does not contain the '{polyline_column}' column."
+            )
+
+        if df.empty:
+            logger.error("Cannot calculate trip distance for an empty DataFrame.")
+            raise IndexError("Cannot calculate trip distance for an empty DataFrame.")
+
+        logger.info("Calculating distance for each polyline using vectorized approach.")
+
+        # Optimization: Use NumPy for vectorized calculations
+        def calculate_distance_numpy(polyline):
+            if not isinstance(polyline, list) or len(polyline) < 2:
+                return 0
+            polyline = np.array(polyline)
+            lons = polyline[:-1, 0]
+            lats = polyline[:-1, 1]
+            lons_next = polyline[1:, 0]
+            lats_next = polyline[1:, 1]
+            distances = self.haversine(lons, lats, lons_next, lats_next, unit=unit)
+            return np.sum(distances)
+
+        tqdm.pandas(desc="Calculating Trip Distance")
+        df[distance_column] = df[polyline_column].progress_apply(
+            calculate_distance_numpy
+        )
+
+        logger.info("Trip distance calculation completed.")
+        return df
+
     def calculate_travel_time(
         self, df: pd.DataFrame, polyline_column: str = "POLYLINE"
     ) -> pd.DataFrame:
@@ -367,6 +434,87 @@ class Preprocessing:
             lambda polyline: (len(polyline) - 1) * 15
         )
 
+        return df
+
+    def calculate_avg_speed(
+        self,
+        df: pd.DataFrame,
+        distance_column: str = "TRIP_DISTANCE",
+        travel_time_column: str = "TRAVEL_TIME",
+        speed_column: str = "AVG_SPEED",
+        unit: str = "km/h",
+    ) -> pd.DataFrame:
+        """
+        Calculate the average speed for each trip based on distance and travel time.
+
+        Parameters:
+        ----------
+        df : pd.DataFrame
+            The input DataFrame.
+        distance_column : str, optional
+            The name of the column that contains trip distance (default is "TRIP_DISTANCE").
+        travel_time_column : str, optional
+            The name of the column that contains travel time data (default is "TRAVEL_TIME").
+        speed_column : str, optional
+            The name of the column to store the calculated average speed (default is "AVG_SPEED").
+        unit : str, optional
+            Unit for average speed calculation ("km/h" or "miles/h"). Defaults to "km/h".
+
+        Returns:
+        -------
+        pd.DataFrame
+            DataFrame with a new column containing the average speed of each trip.
+
+        Raises:
+        ------
+        ValueError
+            If the specified distance or travel time columns do not exist or contain invalid data.
+        """
+        logger.info("Starting average speed calculation.")
+
+        if distance_column not in df.columns:
+            logger.error(
+                f"The DataFrame does not contain the '{distance_column}' column."
+            )
+            raise ValueError(
+                f"The DataFrame does not contain the '{distance_column}' column."
+            )
+        if travel_time_column not in df.columns:
+            logger.error(
+                f"The DataFrame does not contain the '{travel_time_column}' column."
+            )
+            raise ValueError(
+                f"The DataFrame does not contain the '{travel_time_column}' column."
+            )
+
+        if df.empty:
+            logger.error("Cannot calculate average speed for an empty DataFrame.")
+            raise IndexError("Cannot calculate average speed for an empty DataFrame.")
+
+        if not pd.api.types.is_numeric_dtype(df[distance_column]):
+            logger.error(f"The '{distance_column}' column must be numeric type.")
+            raise TypeError(f"The '{distance_column}' column must be numeric type.")
+        if not pd.api.types.is_numeric_dtype(df[travel_time_column]):
+            logger.error(f"The '{travel_time_column}' column must be numeric type.")
+            raise TypeError(f"The '{travel_time_column}' column must be numeric type.")
+
+        logger.info("Calculating average speed for valid travel times.")
+        # Ensure travel time is not zero to avoid division by zero
+        valid_travel_time = df[travel_time_column] > 0
+        df[speed_column] = np.nan  # Initialize column with NaN
+        df.loc[valid_travel_time, speed_column] = df.loc[
+            valid_travel_time, distance_column
+        ] / (df.loc[valid_travel_time, travel_time_column] / 3600)
+
+        # Convert speed to miles per hour if needed
+        if unit == "miles/h":
+            logger.info("Converting speed to miles per hour.")
+            df[speed_column] = df[speed_column] * 0.621371
+        elif unit != "km/h":
+            logger.error("Invalid unit specified. Use 'km/h' or 'miles/h'.")
+            raise ValueError("Invalid unit specified. Use 'km/h' or 'miles/h'.")
+
+        logger.info("Average speed calculation completed.")
         return df
 
     def convert_coordinates(self, string):
@@ -439,7 +587,8 @@ class Preprocessing:
         # Make a copy to avoid modifying the original DataFrame
         df_converted = df.copy()
         tqdm.pandas(desc="Converting POLYLINE to a list")
-        df_converted["POLYLINE_LIST"] = df_converted[polyline_column].progress_apply(
+        logger.info("Converting POLYLINE strings to lists.")
+        df_converted["POLYLINE"] = df_converted[polyline_column].progress_apply(
             ast.literal_eval
         )
         return df_converted

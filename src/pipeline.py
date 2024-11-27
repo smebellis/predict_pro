@@ -34,7 +34,7 @@ def preprocessing_pipeline(
         df = read_csv_with_progress(input_file)
 
         # For testing purposes, uncomment line to use a small sample
-        df = df.sample(n=5000, random_state=42)
+        # df = df.sample(n=5000, random_state=42)
 
         logger.info(f"Loaded data from {input_file}.")
     except FileNotFoundError:
@@ -59,11 +59,11 @@ def preprocessing_pipeline(
         # Step 3: Convert UNIX timestamps to datetime
         logger.info("Converting UNIX timestamps to datetime objects.")
         df = preprocessor.convert_timestamp(df, timestamp_column)
-        breakpoint()
+
         # Step 4: Parse and correct PolyLine Coordinates
         logger.info("Parsing and correcting POLYLINE Coordinates")
         df = preprocessor.parse_and_correct_polyline_coordinates(df, polyline_column)
-        breakpoint()
+
         # Step 5: Extract Starting and Ending locations from POLYLINE
         logger.info("Extracting Starting and Ending locations from Polyline column.")
         df = preprocessor.extract_coordinates(df, polyline_column)
@@ -88,7 +88,15 @@ def preprocessing_pipeline(
         logger.info("Calculate the travel time")
         df = preprocessor.calculate_travel_time(df)
 
-        # Step 9: Save the processed DataFrame
+        # Step 10: Calculate the travel time of each trip
+        logger.info("Calculate Trip Distance")
+        df = preprocessor.calculate_trip_distance(df)
+
+        # Step 11: Calculate the travel time of each trip
+        logger.info("Calculate the Average speed")
+        df = preprocessor.calculate_avg_speed(df, distance_column="TRIP_DISTANCE")
+
+        # Step 11: Save the processed DataFrame
         was_saved = save_dataframe_if_not_exists(df, output_file, file_format="csv")
         if was_saved:
             logger.info(f"File saved to {output_file}.")

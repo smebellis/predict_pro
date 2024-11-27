@@ -124,4 +124,5 @@ dmypy.json
 *.zip
 *.copy
 preprocessed_tensors/*.pt
+preprocessed_tensors/original_feature_engineering/*.pt
 pickle_files/*.pkl

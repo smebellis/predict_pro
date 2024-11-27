@@ -1,16 +1,19 @@
-from src.Preprocessing import Preprocessing
+import os
+import subprocess
+import zipfile
+from typing import Dict
+
+import pandas as pd
 
 from src.districts import load_districts
 from src.helper import (
-    save_dataframe_if_not_exists,
-    save_dataframe_overwrite,
     parse_arguments,
     read_csv_with_progress,
+    save_dataframe_if_not_exists,
+    save_dataframe_overwrite,
 )
-import pandas as pd
-from typing import Dict
-
 from src.logger import get_logger
+from src.Preprocessing import Preprocessing
 
 logger = get_logger(__name__)
 
@@ -30,6 +33,34 @@ def preprocessing_pipeline(
 
     # Load your data
     try:
+        # Check if the data/taxi-trajectory.zip file exists
+        zip_file = "data/taxi-trajectory.zip"
+        data_folder = "data"
+
+        if not os.path.exists(zip_file):
+            logger.info(f"{zip_file} not found. Downloading dataset...")
+            if not os.path.exists(data_folder):
+                os.makedirs(data_folder)
+
+            # Download dataset using Kaggle API
+            subprocess.run(
+                [
+                    "kaggle",
+                    "datasets",
+                    "download",
+                    "crailtap/taxi-trajectory",
+                    "-p",
+                    data_folder,
+                ],
+                check=True,
+            )
+
+            # Unzip the downloaded file
+            with zipfile.ZipFile(zip_file, "r") as zip_ref:
+                zip_ref.extractall(data_folder)
+            logger.info(f"Dataset downloaded and extracted to {data_folder}.")
+        else:
+            logger.info(f"{zip_file} already exists.")
         logger.info(f"Loading data from {input_file}")
         df = read_csv_with_progress(input_file)
 

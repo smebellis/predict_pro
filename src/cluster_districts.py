@@ -332,104 +332,6 @@ def determine_traffic_status_by_quality(
     return df
 
 
-def HDBSCAN_Clustering_Aggregated(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Apply HDBSCAN clustering to polylines grouped by weekday and time, with aggregated membership probabilities.
-
-    Parameters:
-        df (pd.DataFrame): Input dataframe with columns 'WEEKDAY', 'TIME', and 'POLYLINE'.
-
-    Returns:
-        pd.DataFrame: Dataframe with added 'CLUSTER', 'DOM', and 'PROBABILITY' columns.
-    """
-    # Initialize cluster, DOM, PROBABILITY, and OUTLIER_SCORE columns with NaN
-    df["CLUSTER"] = np.nan
-    df["DOM"] = np.nan
-    df["OUTLIER_SCORE"] = np.nan
-
-    # Group the dataframe by WEEKDAY and TIME
-    grouped = df.groupby(["WEEKDAY", "TIME"])
-    logger.info("Starting clustering process for grouped data.")
-
-    for (weekday, time), group in grouped:
-        logger.info(f"Processing group: WEEKDAY={weekday}, TIME={time}")
-
-        # Iterate through each row to extract polylines and apply clustering
-        for index, row in group.iterrows():
-            if pd.isna(row["POLYLINE"]):
-                logger.debug(f"Skipping row {index} due to missing POLYLINE.")
-                continue
-
-            # Extract the list of coordinates from the POLYLINE column
-            try:
-                polyline = ast.literal_eval(row["POLYLINE"])
-            except (ValueError, SyntaxError) as e:
-                logger.warning(
-                    f"Skipping row {index} due to invalid POLYLINE format: {e}"
-                )
-                continue
-
-            if not isinstance(polyline, list) or len(polyline) < 2:
-                logger.debug(
-                    f"Skipping row {index} due to insufficient points in POLYLINE."
-                )
-                continue
-
-            # Convert polyline to numpy array for clustering
-            polyline_points = np.array(polyline)
-            cnt = len(polyline_points)
-
-            # Calculate MinPts as rounded log(cnt), with a minimum of 2
-            min_pts = max(round(math.log(cnt)), 2)
-
-            # If MinPts is less than or equal to 1, clustering is not feasible
-            if min_pts <= 1:
-                logger.debug(f"Skipping row {index} due to MinPts <= 1.")
-                continue
-
-            # Apply HDBSCAN clustering on the polyline
-            try:
-                clusterer = HDBSCAN(min_cluster_size=10, min_samples=5)
-                cluster_labels = clusterer.fit_predict(polyline_points)
-                membership_strengths = clusterer.outlier_scores_
-                membership_probabilities = clusterer.probabilities_
-
-                # Aggregate cluster labels and probabilities
-                # Example: Assign the most frequent cluster and average probability
-                if len(cluster_labels) > 0:
-                    # Most common cluster label
-                    most_common_cluster = Counter(cluster_labels).most_common(1)[0][0]
-
-                    # Average probability
-                    average_probability = np.mean(membership_probabilities)
-                else:
-                    most_common_cluster = np.nan
-                    average_probability = np.nan
-
-                # Assign to DataFrame
-                df.at[index, "CLUSTER"] = most_common_cluster
-
-                df.at[index, "OUTLIER_SCORE"] = (
-                    membership_strengths[-1]
-                    if len(membership_strengths) > 0
-                    else np.nan
-                )
-                df.at[index, "DOM"] = average_probability
-
-                logger.debug(
-                    f"Assigned cluster {most_common_cluster}, DOM {df.at[index, 'DOM']}, "
-                    f"and PROBABILITY {average_probability} for row {index}."
-                )
-
-            except ValueError as e:
-                logger.warning(f"Clustering failed for row {index} with error: {e}")
-
-        # Composite Metrics
-        df["MEMBERSHIP_QUALITY"] = df["DOM"] * (1 - df["OUTLIER_SCORE"])
-    logger.info("Clustering process completed.")
-    return df
-
-
 def HDBSCAN_Clustering_Aggregated_optimized(df: pd.DataFrame) -> pd.DataFrame:
     """
     Apply HDBSCAN clustering to polylines grouped by WEEKDAY and TIME, with aggregated membership probabilities.
@@ -562,90 +464,124 @@ def HDBSCAN_Clustering_Aggregated_optimized(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-def HDBSCAN_Clustering(df: pd.DataFrame) -> pd.DataFrame:
+def encode_geographical_context(df: pd.DataFrame) -> pd.DataFrame:
     """
-    Apply HDBSCAN clustering to polylines grouped by weekday and time.
+    Encode geographical context by clustering start and end coordinates.
 
-    Parameters:
-        df (pd.DataFrame): Input dataframe with columns 'WEEKDAY', 'TIME', and 'POLYLINE'.
+    Args:
+        df (pd.DataFrame): A dataframe containing 'START_LAT', 'START_LONG', 'END_LAT', 'END_LONG' columns.
 
     Returns:
-        pd.DataFrame: Dataframe with added 'CLUSTER' and 'DOM' columns indicating cluster assignment and degree of membership.
+        pd.DataFrame: The input dataframe with an additional 'REGIONAL_CLUSTER' column indicating the geographical cluster.
     """
-    # Initialize cluster and DOM columns with NaN
-    df["CLUSTER"] = np.nan
-    df["DOM"] = np.nan
+    logger.info(
+        "Encoding geographical context by clustering start and end coordinates."
+    )
 
-    # Group the dataframe by WEEKDAY and TIME
-    grouped = df.groupby(["WEEKDAY", "TIME"])
-    logger.info("Starting clustering process for grouped data.")
+    # Combine start and end coordinates into a single array
+    coords = df[["START_LAT", "START_LONG", "END_LAT", "END_LONG"]].values
 
-    for (weekday, time), group in grouped:
-        logger.info(f"Processing group: WEEKDAY={weekday}, TIME={time}")
+    # Apply KMeans clustering
+    kmeans = KMeans(n_clusters=10, random_state=42)
+    df["REGIONAL_CLUSTER"] = kmeans.fit_predict(coords)
 
-        # Iterate through each row to extract polylines and apply clustering
-        for index, row in group.iterrows():
-            if pd.isna(row["POLYLINE_ORIG"]):
-                logger.debug(f"Skipping row {index} due to missing POLYLINE.")
-                continue
+    logger.info("Geographical context encoding completed.")
 
-            # Extract the list of coordinates from the POLYLINE column
-            try:
-                polyline: Any = ast.literal_eval(row["POLYLINE_ORIG"])
-            except (ValueError, SyntaxError) as e:
-                logger.warning(
-                    f"Skipping row {index} due to invalid POLYLINE format: {e}"
-                )
-                continue
+    return df
 
-            if len(polyline) < 2:
-                logger.debug(
-                    f"Skipping row {index} due to insufficient points in POLYLINE."
-                )
-                continue
 
-            # Convert polyline to numpy array for clustering
-            polyline_points = np.array(polyline)
-            cnt = len(polyline_points)
+def aggregate_district_clusters(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Aggregate district and regional clusters into a composite feature.
 
-            # Calculate MinPts as rounded log(cnt)
-            min_pts = max(round(math.log(cnt)), 2)
+    Args:
+        df (pd.DataFrame): A dataframe containing 'DISTRICT_CLUSTER' and 'REGIONAL_CLUSTER' columns.
 
-            # If MinPts is less than or equal to 1, clustering is not feasible
-            if min_pts <= 1:
-                logger.debug(f"Skipping row {index} due to MinPts <= 1.")
-                continue
+    Returns:
+        pd.DataFrame: The input dataframe with an additional 'COMBINED_CLUSTER' column.
+    """
+    logger.info("Aggregating district and regional clusters into a composite feature.")
+    df["COMBINED_CLUSTER"] = (
+        df["DISTRICT_CLUSTER"].astype(str) + "_" + df["REGIONAL_CLUSTER"].astype(str)
+    )
+    logger.info("District and regional cluster aggregation completed.")
+    return df
 
-            # Apply HDBSCAN clustering on the polyline
-            try:
-                clusterer = HDBSCAN(min_cluster_size=min_pts, min_samples=min_pts)
-                cluster_labels = clusterer.fit_predict(polyline_points)
-                membership_strengths = clusterer.probabilities_
 
-                # Assign the results to the DataFrame for the current row
-                df.at[index, "CLUSTER"] = (
-                    cluster_labels[-1] if len(cluster_labels) > 0 else np.nan
-                )
-                df.at[index, "DOM"] = (
-                    membership_strengths[-1]
-                    if len(membership_strengths) > 0
-                    else np.nan
-                )
-                # logger.debug(
-                #     f"Assigned cluster {df.at[index, 'CLUSTER']} and DOM {df.at[index, 'DOM']} for row {index}."
-                # )
+def traffic_congestion_indicator(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Calculate traffic congestion indicator based on travel time and trip distance.
 
-            except ValueError as e:
-                logger.warning(f"Clustering failed for row {index} with error: {e}")
+    Args:
+        df (pd.DataFrame): A dataframe containing 'TRAVEL_TIME' and 'TRIP_DISTANCE' columns.
 
-    logger.info("Clustering process completed.")
+    Returns:
+        pd.DataFrame: The input dataframe with an additional 'CONGESTION' column.
+    """
+    logger.info("Calculating Traffic congestion")
+    # Drop rows where TRIP_DISTANCE is 0 or very small (e.g., less than 1e-5)
+    df = df[df["TRIP_DISTANCE"] > 1e-5]
+
+    # Calculate congestion indicator
+    df["CONGESTION"] = df["TRAVEL_TIME"] / df["TRIP_DISTANCE"]
+
+    logger.info("Traffic congestion indicator calculation completed.")
+    return df
+
+
+def add_temporal_context(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Add temporal context to the combined cluster feature.
+
+    Args:
+        df (pd.DataFrame): A dataframe containing 'COMBINED_CLUSTER' and 'TIME_PERIODS' columns.
+
+    Returns:
+        pd.DataFrame: The input dataframe with an additional 'REGIONAL_TEMPORAL_CONTEXT' column.
+    """
+    logger.info("Adding temporal context to the combined cluster feature.")
+    df["REGIONAL_TEMPORAL_CONTEXT"] = (
+        df["COMBINED_CLUSTER"] + "_" + df["TIME_PERIODS"].astype(str)
+    )
+    logger.info("Temporal context added to combined cluster feature.")
+    return df
+
+
+def aggregate_historical_data(df: pd.DataFrame) -> pd.DataFrame:
+    """
+    Aggregate historical data by grouping by regional temporal context and calculating averages.
+
+    Args:
+        df (pd.DataFrame): A dataframe containing 'REGIONAL_TEMPORAL_CONTEXT' column.
+
+    Returns:
+        pd.DataFrame: The input dataframe with merged aggregated historical features.
+    """
+    logger.info("Aggregating historical data by regional temporal context.")
+    # Group by the new context and calculate averages
+    regional_summary = (
+        df.groupby("REGIONAL_TEMPORAL_CONTEXT")
+        .agg(
+            {
+                "TRAVEL_TIME": "mean",
+                "TRAFFIC_STATUS": lambda x: x.value_counts().idxmax(),  # Most common traffic status
+                "AVG_SPEED": "mean",
+            }
+        )
+        .reset_index()
+    )
+
+    # Merge aggregated features back to the main DataFrame
+    df = df.merge(regional_summary, on="REGIONAL_TEMPORAL_CONTEXT", how="left")
+
+    logger.info("Historical data aggregation completed.")
     return df
 
 
 if __name__ == "__main__":
     np.seterr(divide="ignore", invalid="ignore")
     df = pd.read_csv(
-        "/home/smebellis/ece5831_final_project/processed_data/test_new_function.csv"
+        "/home/smebellis/ece5831_final_project/processed_data/clustered_dataset.csv"
     )
 
     sample_df = df.sample(n=50000, random_state=42)
@@ -663,9 +599,22 @@ if __name__ == "__main__":
 
     sample_df = HDBSCAN_Clustering_Aggregated_optimized(sample_df)
     sample_df = determine_traffic_status_by_quality(sample_df)
+    sample_df = encode_geographical_context(sample_df)
+    sample_df = aggregate_district_clusters(sample_df)
+    sample_df = traffic_congestion_indicator(sample_df)
+    sample_df = add_temporal_context(sample_df)
+    sample_df = aggregate_historical_data(sample_df)
     print(
         sample_df[
-            ["WEEKDAY", "TIME", "CLUSTER", "DOM", "OUTLIER_SCORE", "MEMBERSHIP_QUALITY"]
+            [
+                "WEEKDAY",
+                "TIME",
+                "DISTRICT_CLUSTER",
+                "REGIONAL_CLUSTER",
+                "COMBINED_CLUSTER",
+                "REGIONAL_TEMPORAL_CONTEXT",
+                "CONGESTION",
+            ]
         ].head()
     )
     breakpoint()

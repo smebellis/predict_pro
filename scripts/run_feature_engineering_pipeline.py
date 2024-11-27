@@ -9,6 +9,7 @@ from joblib import Parallel, delayed
 from tqdm import tqdm
 import ast
 import pickle
+import numpy as np
 
 import json
 
@@ -16,8 +17,12 @@ import json
 # Add the project root to sys.path
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
-from src.FeatureEngineering import FeatureEngineeringPipeline
+from src.FeatureEngineering import (
+    FeatureEngineeringPipeline,
+    EnhancedFeatureEngineeringPipeline,
+)
 from src.logger import get_logger
+from src.helper import read_csv_with_progress
 
 logger = get_logger(__name__)
 
@@ -35,25 +40,6 @@ input_path = (
 output_path = (
     "/home/smebellis/ece5831_final_project/processed_data/post_feature_engineered.csv"
 )
-
-
-def convert_polyline_to_list(df: pd.DataFrame) -> pd.DataFrame:
-    """
-    Converts the POLYLINE column from string representation to a list of coordinates.
-
-    Args:
-        df (pd.DataFrame): The dataframe containing the POLYLINE column.
-
-    Returns:
-        pd.DataFrame: The dataframe with POLYLINE converted to lists.
-    """
-    logger.info("Starting POLYLINE conversion to lists.")
-
-    tqdm.pandas(desc="Converting POLYLINE to a list")
-    logger.info("Converting POLYLINE strings to lists.")
-    df["POLYLINE"] = df["POLYLINE"].progress_apply(ast.literal_eval)
-    logger.info("Conversion of POLYLINE to lists complete.")
-    return df
 
 
 # Save each split to a .pkl file
@@ -182,7 +168,7 @@ if __name__ == "__main__":
     # Check if the postprocessed dataset exists
     if os.path.exists(output_path):
         try:
-            df = pd.read_csv(output_path)
+            df = read_csv_with_progress(output_path)
             logger.info("Loaded postprocessed dataset from CSV.")
         except Exception as e:
             logger.error(f"Failed to load the postprocessed dataset: {e}")
@@ -190,23 +176,21 @@ if __name__ == "__main__":
     else:
         # If the postprocessed file doesn't exist, process the original dataset
         try:
-            df = pd.read_csv(input_path)
+            df = read_csv_with_progress(input_path)
             logger.info("Loaded original dataset from CSV.")
         except FileNotFoundError as e:
             logger.error("CSV file not found. Please check the file path.")
             raise e
 
         # Test with a small sample, comment out the lines below to run on the whole dataset
-        # df = df.sample(n=500000, random_state=42)
+        # df = df.sample(n=4000, random_state=42)
 
-        # Convert the polyline column from string to list
-        # df = convert_polyline_to_list(df)
-
-        # More optimized version of converting POLYLINE string into List
+        # Converting POLYLINE string into List
+        logger.info("Using Swifter to convert POLYLINE to list")
         df["POLYLINE"] = df["POLYLINE"].swifter.apply(
             lambda x: ast.literal_eval(x) if isinstance(x, str) else x
         )
-
+        logger.info("Completed POLYLINE to list conversion")
     # Split the dataset into training, validation, and test sets
     logger.info("Spliting the dataset into training, validation, and test sets.")
     train_df, temp_df = train_test_split(df, test_size=0.2, random_state=42)
@@ -215,13 +199,44 @@ if __name__ == "__main__":
         "Completed splitting the dataset into training, validation, and test sets."
     )
 
+    # ============================
+    # Debugging for large values
+    # ============================
+
+    # Define a reasonable threshold for your use case (e.g., 1e15 or some domain-specific value)
+    # threshold = 1e15
+
+    # # Check for any values that exceed the threshold in the dataframe
+    # large_values = train_df.select_dtypes(include=[np.number]) > threshold
+    # if large_values.any().any():
+    #     print(
+    #         "The dataframe contains values that are too large for practical float64 usage."
+    #     )
+    # else:
+    #     print("All values are within reasonable limits for float64.")
+    # # Get max and min values for each numeric column
+    # numeric_columns = train_df.select_dtypes(include=[np.number])
+
+    # # Find the max and min value for each numeric column
+    # max_values = numeric_columns.max()
+    # min_values = numeric_columns.min()
+
+    # print("Maximum values for each column:")
+    # print(max_values)
+    # print("\nMinimum values for each column:")
+    # print(min_values)
+    # breakpoint()
+
     # Save pickle files for baseline testing
     save_as_pkl(train_df, "train", PICKLE_DIR)
     save_as_pkl(val_df, "val", PICKLE_DIR)
     save_as_pkl(test_df, "test", PICKLE_DIR)
 
     # Initialize the feature engineering pipeline
-    pipeline = FeatureEngineeringPipeline()
+    # pipeline = FeatureEngineeringPipeline()
+
+    # Initialize the Enhanced feature engineering pipeline
+    pipeline = EnhancedFeatureEngineeringPipeline()
 
     # Fit the pipeline on the training set and transform all sets
     logger.info("Fitting the feature engineering pipeline on the training set.")

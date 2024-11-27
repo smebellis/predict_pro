@@ -11,6 +11,11 @@ from src.cluster_districts import (
     cluster_trip_district,
     cluster_trip_time,
     determine_traffic_status_by_quality,
+    encode_geographical_context,
+    aggregate_district_clusters,
+    traffic_congestion_indicator,
+    add_temporal_context,
+    aggregate_historical_data,
 )
 from src.districts import load_districts
 from src.helper import (
@@ -43,14 +48,18 @@ def main():
 
     try:
         df = read_csv_with_progress(args.input)
-
+        # df = df.sample(n=5000, random_state=42)
         logger.info("CSV file read successfully.")
         clustered_df = cluster_trip_district(df, porto_districts)
         clustered_df = cluster_trip_time(clustered_df)
 
         clustered_df = HDBSCAN_Clustering_Aggregated_optimized(clustered_df)
         clustered_df = determine_traffic_status_by_quality(clustered_df)
-
+        clustered_df = encode_geographical_context(clustered_df)
+        clustered_df = aggregate_district_clusters(clustered_df)
+        clustered_df = traffic_congestion_indicator(clustered_df)
+        clustered_df = add_temporal_context(clustered_df)
+        # clustered_df = aggregate_historical_data(clustered_df)
         save_dataframe_if_not_exists(clustered_df, args.save)
         logger.info(f"Clustered DataFrame Save to {args.save}")
     except Exception as e:

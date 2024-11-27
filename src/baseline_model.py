@@ -9,8 +9,11 @@ from sklearn.metrics import (
     confusion_matrix,
 )
 
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.inspection import permutation_importance
 from sklearn.dummy import DummyClassifier
 from helper import plot_metrics
+import matplotlib.pyplot as plt
 
 # Initialize the metrics dictionary
 metrics = {}

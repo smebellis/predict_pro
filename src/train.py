@@ -61,7 +61,7 @@ logger = get_logger(__name__)
 
 parser = argparse.ArgumentParser(description="Train TrafficStatusCNN model.")
 parser.add_argument(
-    "--batch_size", type=int, default=32, help="Batch size for training"
+    "--batch_size", type=int, default=64, help="Batch size for training"
 )
 parser.add_argument(
     "--learning_rate", type=float, default=1e-4, help="Learning rate for optimizer"
@@ -225,33 +225,6 @@ def get_class_names(label_encoder_path: str, unique_labels: np.ndarray) -> list:
     return [f"Class{label}" for label in unique_labels]
 
 
-def load_and_concatenate_batches(prefix: str, preprocessed_dir: str) -> torch.Tensor:
-    """
-    Load all tensor batches with the given prefix from the specified directory and concatenate them.
-
-    Args:
-        prefix (str): Prefix of the saved tensor files (e.g., "train", "val", "test").
-        preprocessed_dir (str): Directory where the tensor batches are saved.
-
-    Returns:
-        torch.Tensor: A concatenated tensor of all the batches with the given prefix.
-    """
-    batch_files = [f for f in os.listdir(preprocessed_dir) if f.startswith(prefix)]
-    # Sort files to maintain order
-    batch_files.sort()
-
-    tensors = []
-    for batch_file in batch_files:
-        if batch_file.endswith(".pt"):
-            tensor_path = os.path.join(preprocessed_dir, batch_file)
-            tensor = torch.load(tensor_path)
-            tensors.append(tensor)
-
-    # Concatenate all tensors into a single tensor
-    concatenated_tensor = torch.cat(tensors, dim=0)
-    return concatenated_tensor
-
-
 # ============================
 # Main Training Script
 # ============================
@@ -395,21 +368,44 @@ def main():
     metrics_path = os.path.join(metrics_dir, "metrics_incremental.pkl")
 
     # Initialize or load existing metrics
-    if os.path.exists(metrics_path):
-        with open(metrics_path, "rb") as f:
-            metrics = pickle.load(f)
-        logger.info("Loaded existing metrics for continuation.")
-    else:
-        metrics = {
-            "train_accuracies": [],
-            "val_accuracies": [],
-            "train_losses": [],
-            "val_losses": [],
-        }
+    # Note: Metrics will be saved with a timestamp later in the code
+    metrics = {
+        "train_accuracies": [],
+        "train_losses": [],
+        "val_accuracies": [],
+        "val_losses": [],
+        "val_precision": [],
+        "val_recall": [],
+        "val_f1_score": [],
+        "val_confusion_matrices": [],
+        "test_accuracy": [],
+        "test_precision": [],
+        "test_recall": [],
+        "test_f1_score": [],
+        "test_confusion_matrix": [],
+    }
 
     # Parameters
     max_saved_models = 5  # Number of recent models to keep
-    saved_models_queue = deque(maxlen=max_saved_models)
+    max_saved_metrics = 5  # Number of recent metrics to keep
+
+    saved_models_queue_path = os.path.join(metrics_dir, "saved_models_queue.pkl")
+    saved_metrics_queue_path = os.path.join(metrics_dir, "saved_metrics_queue.pkl")
+
+    # Load or initialize the model and metrics deques
+    if os.path.exists(saved_models_queue_path):
+        with open(saved_models_queue_path, "rb") as f:
+            saved_models_queue = pickle.load(f)
+        logger.info("Loaded saved model queue.")
+    else:
+        saved_models_queue = deque(maxlen=max_saved_models)
+
+    if os.path.exists(saved_metrics_queue_path):
+        with open(saved_metrics_queue_path, "rb") as f:
+            saved_metrics_queue = pickle.load(f)
+        logger.info("Loaded saved metrics queue.")
+    else:
+        saved_metrics_queue = deque(maxlen=max_saved_metrics)
 
     # Training loop
     for epoch in range(num_epochs):
@@ -483,6 +479,7 @@ def main():
         accuracy = 100 * correct / total
         metrics["train_losses"].append(epoch_loss)
         metrics["train_accuracies"].append(accuracy)
+
         logger.info(
             f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Accuracy: {accuracy:.2f}%"
         )
@@ -491,9 +488,15 @@ def main():
         val_loss, val_accuracy, val_metrics = evaluate(
             model, val_loader, criterion, device
         )
+        # metrics["val_losses"].append(val_loss)
+        # metrics["val_accuracies"].append(val_accuracy)
+        # metrics["val_metrics"] = val_metrics  # Store validation metrics
         metrics["val_losses"].append(val_loss)
-        metrics["val_accuracies"].append(val_accuracy)
-        metrics["val_metrics"] = val_metrics  # Store validation metrics
+        metrics["val_accuracies"].append(val_metrics["Accuracy"])
+        metrics["val_precision"].append(val_metrics["Precision"])
+        metrics["val_recall"].append(val_metrics["Recall"])
+        metrics["val_f1_score"].append(val_metrics["F1 Score"])
+        # metrics["val_confusion_matrices"].append(val_metrics["Confusion Matrix"])
         logger.info(
             f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%"
         )
@@ -501,48 +504,93 @@ def main():
         scheduler.step(val_loss)
 
         # Early stopping check
-        if val_loss < best_val_loss:
+        min_improvement = 1e-3
+        improvement = best_val_loss - val_loss
+
+        if improvement > min_improvement:
             best_val_loss = val_loss
             patience_counter = 0
             # Save the best model
             torch.save(model.state_dict(), best_model_path)
             logger.info(f"Best model saved with Validation Loss: {best_val_loss:.4f}")
+            logger.info(f"Validation Loss Improvement: {improvement:.6f}")
         else:
             patience_counter += 1
             logger.info(
-                f"No improvement in Validation Loss. Patience: {patience_counter}/{patience}"
+                f"No significant improvement in Validation Loss. Patience: {patience_counter}/{patience}"
             )
 
-        # Save metrics incrementally after every epoch
-        with open(metrics_path, "wb") as f:
-            pickle.dump(metrics, f)
-        logger.info(f"Metrics incrementally saved at '{metrics_path}'.")
-
-        # Save the current model with a timestamp
-        os.makedirs("models", exist_ok=True)
-        timestamp = time.strftime("%Y%m%d_%H%M")
-        current_model_path = os.path.join("models", f"model_{timestamp}.pth")
-        torch.save(model.state_dict(), current_model_path)
-        logger.info(f"Model saved with timestamp: {current_model_path}")
-
-        # Rotate saved models
-        if len(saved_models_queue) == max_saved_models:
-            # If deque is full, the oldest model will be removed from the deque.
-            # Get the oldest model path before appending the new one.
-            oldest_model = saved_models_queue[0]
-            if os.path.exists(oldest_model) and oldest_model != best_model_path:
-                os.remove(oldest_model)
-                logger.info(f"Oldest model removed from disk: {oldest_model}")
-
-        # Append the new model path to the deque
-        saved_models_queue.append(current_model_path)
+        # Early stopping logic
         if patience_counter >= patience:
             logger.info("Early stopping triggered.")
             break
 
-    # Load the best model state for further use (e.g., testing or inference)
-    model.load_state_dict(torch.load(best_model_path))
-    logger.info("Loaded the best model from training.")
+        # Save metrics incrementally after every epoch with a timestamp
+        timestamp = time.strftime("%Y-%m-%d_%H%M")
+        current_metrics_path = os.path.join(metrics_dir, f"metrics_{timestamp}.pkl")
+
+        # Save the metrics first
+        try:
+            with open(current_metrics_path, "wb") as f:
+                pickle.dump(metrics, f)
+            logger.info(f"Metrics incrementally saved at '{current_metrics_path}'.")
+            # Append to deque AFTER successfully saving the metrics
+            saved_metrics_queue.append(current_metrics_path)
+        except Exception as e:
+            logger.error(f"Failed to save metrics at '{current_metrics_path}': {e}")
+
+        # Rotate saved metrics if queue size exceeds the limit
+        if len(saved_metrics_queue) > max_saved_metrics:
+            oldest_metrics = saved_metrics_queue.popleft()
+            if os.path.exists(oldest_metrics):
+                try:
+                    os.remove(oldest_metrics)
+                    logger.info(f"Oldest metrics removed from disk: {oldest_metrics}")
+                except Exception as e:
+                    logger.error(
+                        f"Failed to remove old metrics file '{oldest_metrics}': {e}"
+                    )
+
+        # Save the model with a timestamp
+        os.makedirs("models", exist_ok=True)
+        current_model_path = os.path.join("models", f"model_{timestamp}.pth")
+
+        try:
+            torch.save(model.state_dict(), current_model_path)
+            logger.info(f"Model saved with timestamp: {current_model_path}")
+            # Append to deque AFTER successfully saving the model
+            saved_models_queue.append(current_model_path)
+        except Exception as e:
+            logger.error(f"Failed to save model at '{current_model_path}': {e}")
+
+        # Rotate saved models if queue size exceeds the limit
+        if len(saved_models_queue) > max_saved_models:
+            oldest_model = saved_models_queue.popleft()
+            if os.path.exists(oldest_model) and oldest_model != best_model_path:
+                try:
+                    os.remove(oldest_model)
+                    logger.info(f"Oldest model removed from disk: {oldest_model}")
+                except Exception as e:
+                    logger.error(
+                        f"Failed to remove old model file '{oldest_model}': {e}"
+                    )
+
+        # Save the updated deques to preserve state across runs
+        with open(saved_models_queue_path, "wb") as f:
+            pickle.dump(saved_models_queue, f)
+        with open(saved_metrics_queue_path, "wb") as f:
+            pickle.dump(saved_metrics_queue, f)
+
+    # ============================
+    # After Training Completes
+    # ============================
+
+    # Load the best model state for testing or inference
+    try:
+        model.load_state_dict(torch.load(best_model_path))
+        logger.info("Loaded the best model from training.")
+    except Exception as e:
+        logger.error(f"Failed to load the best model from '{best_model_path}': {e}")
 
     # ============================
     # Test Evaluation
@@ -551,6 +599,11 @@ def main():
     test_loss, test_accuracy, test_metrics = evaluate(
         model, test_loader, criterion, device
     )
+    metrics["test_accuracy"].append(test_metrics["Accuracy"])
+    metrics["test_precision"].append(test_metrics["Precision"])
+    metrics["test_recall"].append(test_metrics["Recall"])
+    metrics["test_f1_score"].append(test_metrics["F1 Score"])
+    # metrics["test_confusion_matrix"].append(test_metrics["Confusion Matrix"])
     logger.info(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.2f}%")
 
     # Print the metrics similar to the Zero-Rule and Random Classifier example
@@ -561,19 +614,15 @@ def main():
         else:
             logger.info(f"{metric}: {value}")
 
-    # Store metrics to a DataFrame for easier visualization if needed
-    test_metrics_df = pd.DataFrame(test_metrics, index=[0])
-    test_metrics_df.to_pickle("pickle_files/test_metrics.pkl")
-
     # ============================
     # Plot Training and Validation Metrics
     # ============================
 
     # Load the metrics
-    with open(metrics_path, "rb") as f:
-        metrics = pickle.load(f)
-    logger.info("Loaded the metrics for plotting.")
-    plot_metrics(metrics)
+    # with open(metrics_path, "rb") as f:
+    #     metrics = pickle.load(f)
+    # logger.info("Loaded the metrics for plotting.")
+    # plot_metrics(metrics)
 
 
 if __name__ == "__main__":

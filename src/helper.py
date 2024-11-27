@@ -11,6 +11,8 @@ import torch
 import yaml
 from sklearn.cluster import KMeans
 from tqdm import tqdm
+import seaborn as sns
+import os
 
 from src.logger import get_logger
 
@@ -439,6 +441,28 @@ def plot_route_images(route_images: torch.Tensor, num_images: int = 5):
 
     plt.show()
     logger.info("Displayed route images.")
+
+
+# Function to plot metrics and save them to a folder
+def plot_metrics(metrics, output_dir="plots"):
+    os.makedirs(output_dir, exist_ok=True)
+    for clf_name, clf_metrics in metrics.items():
+        for metric, value in clf_metrics.items():
+            if metric == "Confusion Matrix":
+                plt.figure(figsize=(8, 6))
+                sns.heatmap(value, annot=True, fmt="d", cmap="Blues")
+                plt.title(f"{metric} for {clf_name}")
+                plt.ylabel("Actual")
+                plt.xlabel("Predicted")
+                plt.savefig(os.path.join(output_dir, f"{clf_name}_{metric}.png"))
+                plt.close()
+            else:
+                plt.figure()
+                plt.bar([clf_name], [value])
+                plt.title(f"{metric} for {clf_name}")
+                plt.ylabel(metric)
+                plt.savefig(os.path.join(output_dir, f"{clf_name}_{metric}.png"))
+                plt.close()
 
 
 if __name__ == "__main__":

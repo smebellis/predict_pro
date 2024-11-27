@@ -76,13 +76,8 @@ class FeatureEngineeringPipeline:
 
         # Fit scaler on imputed numerical features
         self.scaler.fit(imputed_numerical)
-        # logger.info("Fitting encoders and scaler on the training data.")
-        # self.weekday_encoder.fit(dataframe[["WEEKDAY"]])
-        # self.month_encoder.fit(dataframe[["MONTH"]])
 
-        # self.cluster_encoder.fit(dataframe[["DISTRICT_CLUSTER", "TIME_CLUSTER"]])
-        # self.scaler.fit(dataframe[["DOM", "OUTLIER_SCORE", "MEMBERSHIP_QUALITY"]])
-        # logger.info("Completed fitting encoders and scaler.")
+        logger.info("Completed fitting encoders and scaler.")
 
     def transform(self, dataframe):
         """
@@ -97,95 +92,7 @@ class FeatureEngineeringPipeline:
                 - route_images_tensor (torch.Tensor): Tensor of route images.
                 - additional_features_tensor (torch.Tensor): Tensor of additional engineered features.
         """
-        # logger.info("Starting transformation of the dataframe.")
-        # # dataframe = self.convert_polyline_to_list(dataframe)
-        # # One-Hot Encode categorical features
-        # logger.debug("Encoding categorical features.")
-        # weekday_encoded = self.weekday_encoder.transform(
-        #     dataframe[["WEEKDAY"]]
-        # ).toarray()
-        # month_encoded = self.month_encoder.transform(dataframe[["MONTH"]]).toarray()
 
-        # cluster_encoded = self.cluster_encoder.transform(
-        #     dataframe[["DISTRICT_CLUSTER", "TIME_CLUSTER"]]
-        # ).toarray()
-
-        # # Normalize numerical features
-        # logger.debug("Scaling numerical features.")
-        # scaled_features = self.scaler.transform(
-        #     dataframe[["DOM", "OUTLIER_SCORE", "MEMBERSHIP_QUALITY"]]
-        # )
-
-        # # Sin-Cosine Encoding for time feature
-        # logger.debug("Applying sin-cos encoding to the 'TIME' feature.")
-        # time = dataframe["TIME"]
-        # time_sin = np.sin(2 * np.pi * time / 24)
-        # time_cos = np.cos(2 * np.pi * time / 24)
-        # time_encoded = np.column_stack((time_sin, time_cos))
-
-        # tracemalloc.start()
-
-        # # Convert POLYLINE to image representation
-        # logger.info("Converting POLYLINE to image representations.")
-        # route_images = [
-        #     self.convert_route_to_image(polyline) for polyline in dataframe["POLYLINE"]
-        # ]
-
-        # snapshot = tracemalloc.take_snapshot()
-        # top_stats = snapshot.statistics("lineno")
-        # logger.debug("[ Top 10 Memory Consumers]")
-        # for stat in top_stats[:10]:
-        #     logger.debug(stat)
-
-        # # Verify array types and dimensions before concatenation
-        # logger.debug("Verifying array types and dimensions before concatenation.")
-        # feature_arrays = {
-        #     "weekday_encoded": weekday_encoded,
-        #     "month_encoded": month_encoded,
-        #     "cluster_encoded": cluster_encoded,
-        #     "scaled_features": scaled_features,
-        #     "time_encoded": time_encoded,
-        # }
-
-        # for name, array in feature_arrays.items():
-        #     logger.debug(
-        #         f"{name}: type={type(array)}, shape={array.shape}, ndim={array.ndim}"
-        #     )
-        #     if array.size == 0:
-        #         logger.warning(f"Warning: {name} is empty!")
-        #     elif array.ndim == 0:
-        #         logger.warning(f"Warning: {name} is zero-dimensional!")
-
-        # # Concatenate all features with error handling
-        # try:
-        #     logger.info("Concatenating all engineered features.")
-        #     additional_features = np.concatenate(
-        #         [
-        #             weekday_encoded,
-        #             month_encoded,
-        #             cluster_encoded,
-        #             scaled_features,
-        #             time_encoded,
-        #         ],
-        #         axis=1,
-        #     )
-        #     logger.debug(f"Concatenated features shape: {additional_features.shape}")
-        # except ValueError as e:
-        #     logger.error("Error during concatenation of features.")
-        #     for name, array in feature_arrays.items():
-        #         logger.error(f"{name} shape: {array.shape}")
-        #     logger.error(f"Error message: {e}")
-        #     raise
-
-        # # Convert to torch tensors
-        # logger.info("Converting features to torch tensors.")
-        # route_images_tensor = torch.stack(
-        #     [torch.tensor(img, dtype=torch.float32) for img in route_images]
-        # )
-        # additional_features_tensor = torch.tensor(
-        #     additional_features, dtype=torch.float32
-        # )
-        # logger.info("Transformation complete.")
         logger.info("Starting transformation of the dataframe.")
 
         # Impute categorical features
@@ -439,22 +346,6 @@ class FeatureEngineeringPipeline:
         # cv2.destroyAllWindows()
 
         return image
-
-    # def convert_polyline_to_list(self, df: pd.DataFrame) -> pd.DataFrame:
-    #     """
-    #     Converts the POLYLINE column from string representation to a list of coordinates.
-
-    #     Args:
-    #         df (pd.DataFrame): The dataframe containing the POLYLINE column.
-
-    #     Returns:
-    #         pd.DataFrame: The dataframe with POLYLINE converted to lists.
-    #     """
-    #     tqdm.pandas(desc="Converting POLYLINE to a list")
-    #     logger.info("Converting POLYLINE strings to lists.")
-    #     df["POLYLINE"] = df["POLYLINE"].progress_apply(ast.literal_eval)
-    #     logger.info("Conversion of POLYLINE to lists complete.")
-    #     return df
 
     def fit_transform(self, dataframe: pd.DataFrame):
         """

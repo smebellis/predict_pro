@@ -21,6 +21,12 @@ from src.logger import get_logger
 
 logger = get_logger(__name__)
 
+# Directory for pickle files
+PICKLE_DIR = "pickle_files"
+
+# Ensure the directory exists
+os.makedirs(PICKLE_DIR, exist_ok=True)
+
 BATCH_SIZE = 1000
 # Paths
 input_path = (
@@ -48,6 +54,14 @@ def convert_polyline_to_list(df: pd.DataFrame) -> pd.DataFrame:
     df["POLYLINE"] = df["POLYLINE"].progress_apply(ast.literal_eval)
     logger.info("Conversion of POLYLINE to lists complete.")
     return df
+
+
+# Save each split to a .pkl file
+def save_as_pkl(dataframe, filename, directory):
+    filepath = os.path.join(directory, f"{filename}.pkl")
+    with open(filepath, "wb") as f:
+        pickle.dump(dataframe, f)
+    logger.info(f"{filename}.pkl saved successfully at {filepath}")
 
 
 def batch_process_pipeline(
@@ -197,6 +211,11 @@ if __name__ == "__main__":
     logger.info(
         "Completed splitting the dataset into training, validation, and test sets."
     )
+
+    # Save pickle files for baseline testing
+    save_as_pkl(train_df, "train", PICKLE_DIR)
+    save_as_pkl(val_df, "val", PICKLE_DIR)
+    save_as_pkl(test_df, "test", PICKLE_DIR)
 
     # Initialize the feature engineering pipeline
     pipeline = FeatureEngineeringPipeline()

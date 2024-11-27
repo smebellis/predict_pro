@@ -2,6 +2,8 @@ import argparse
 import os
 import pickle
 import random
+import time
+from collections import deque
 from typing import Tuple
 
 import cv2
@@ -10,14 +12,19 @@ import pandas as pd
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from sklearn.metrics import classification_report
+from sklearn.metrics import (
+    accuracy_score,
+    classification_report,
+    confusion_matrix,
+    f1_score,
+    precision_score,
+    recall_score,
+)
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils.class_weight import compute_class_weight
 from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
-from collections import deque
-import time
 
 from AlexnetTrafficCNN import AlexNetTrafficCNN, BasicTrafficCNN
 from FeatureEngineering import FeatureEngineeringPipeline
@@ -171,10 +178,21 @@ def evaluate(model, dataloader, criterion, device):
         report = classification_report(
             all_labels, all_predictions, target_names=class_names, zero_division=0
         )
-
+    # Calculate other metrics
+    metrics = {
+        "Accuracy": accuracy_score(all_labels, all_predictions),
+        "Precision": precision_score(
+            all_labels, all_predictions, average="weighted", zero_division=0
+        ),
+        "Recall": recall_score(
+            all_labels, all_predictions, average="weighted", zero_division=0
+        ),
+        "F1 Score": f1_score(all_labels, all_predictions, average="weighted"),
+        "Confusion Matrix": confusion_matrix(all_labels, all_predictions),
+    }
     # logger.info(f"Classification Report:\n{report}")
 
-    return avg_loss, accuracy
+    return avg_loss, accuracy, metrics
 
 
 def get_class_names(label_encoder_path: str, unique_labels: np.ndarray) -> list:
@@ -470,13 +488,15 @@ def main():
         )
 
         # Validation
-        val_loss, val_accuracy = evaluate(model, val_loader, criterion, device)
+        val_loss, val_accuracy, val_metrics = evaluate(
+            model, val_loader, criterion, device
+        )
         metrics["val_losses"].append(val_loss)
         metrics["val_accuracies"].append(val_accuracy)
+        metrics["val_metrics"] = val_metrics  # Store validation metrics
         logger.info(
             f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%"
         )
-
         # Step the scheduler
         scheduler.step(val_loss)
 
@@ -528,8 +548,22 @@ def main():
     # Test Evaluation
     # ============================
 
-    test_loss, test_accuracy = evaluate(model, test_loader, criterion, device)
+    test_loss, test_accuracy, test_metrics = evaluate(
+        model, test_loader, criterion, device
+    )
     logger.info(f"Test Loss: {test_loss:.4f}, Test Accuracy: {test_accuracy:.2f}%")
+
+    # Print the metrics similar to the Zero-Rule and Random Classifier example
+    logger.info("\nTest Performance Metrics:\n")
+    for metric, value in test_metrics.items():
+        if metric == "Confusion Matrix":
+            logger.info(f"{metric}:\n{value}\n")
+        else:
+            logger.info(f"{metric}: {value}")
+
+    # Store metrics to a DataFrame for easier visualization if needed
+    test_metrics_df = pd.DataFrame(test_metrics, index=[0])
+    test_metrics_df.to_pickle("pickle_files/test_metrics.pkl")
 
     # ============================
     # Plot Training and Validation Metrics

@@ -185,6 +185,8 @@ if __name__ == "__main__":
         # Test with a small sample, comment out the lines below to run on the whole dataset
         # df = df.sample(n=4000, random_state=42)
 
+        columns_to_drop = ["TRIP_ID", "ROUTE", "CALL_TYPE", "TAXI_ID", "DAY_TYPE"]
+        df = df.drop(columns=columns_to_drop)
         # Converting POLYLINE string into List
         logger.info("Using Swifter to convert POLYLINE to list")
         df["POLYLINE"] = df["POLYLINE"].swifter.apply(
@@ -233,10 +235,10 @@ if __name__ == "__main__":
     save_as_pkl(test_df, "test", PICKLE_DIR)
 
     # Initialize the feature engineering pipeline
-    # pipeline = FeatureEngineeringPipeline()
+    pipeline = FeatureEngineeringPipeline()
 
     # Initialize the Enhanced feature engineering pipeline
-    pipeline = EnhancedFeatureEngineeringPipeline()
+    # pipeline = EnhancedFeatureEngineeringPipeline()
 
     # Fit the pipeline on the training set and transform all sets
     logger.info("Fitting the feature engineering pipeline on the training set.")

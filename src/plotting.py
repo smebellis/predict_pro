@@ -67,7 +67,10 @@ def reload_and_evaluate_model(
 
 if __name__ == "__main__":
     # Load the metrics
-    with open("metrics.pkl", "rb") as f:
+    with open(
+        "/home/smebellis/ece5831_final_project/metrics/metrics_2024-11-28_0340.pkl",
+        "rb",
+    ) as f:
         metrics = pickle.load(f)
 
     plot_metrics(metrics)

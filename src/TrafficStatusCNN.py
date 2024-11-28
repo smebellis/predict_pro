@@ -17,21 +17,33 @@ class TrafficStatusCNN(nn.Module):
         self.device = device
         self.num_classes = num_classes
         self._initialize_weights()
-        # Define CNN layers for route images
+        # Define CNN layers for route images with Batch Normalization and updated Dropout
         self.cnn_layers = nn.Sequential(
             nn.Conv2d(
-                in_channels=1, out_channels=16, kernel_size=3, stride=1, padding=1
-            ),  # Update in_channels to 1
+                in_channels=1, out_channels=32, kernel_size=3, stride=1, padding=1
+            ),
+            nn.BatchNorm2d(32),  # Added Batch Normalization
+            nn.ReLU(),
+            nn.Conv2d(
+                in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=1
+            ),
+            nn.BatchNorm2d(64),  # Added Batch Normalization
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            # Add more layers if needed
+            nn.Conv2d(
+                in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=1
+            ),
+            nn.BatchNorm2d(128),  # Added Batch Normalization
+            nn.ReLU(),
+            nn.MaxPool2d(kernel_size=2, stride=2),
+            nn.Dropout(0.4),  # Increased Dropout to 0.4
         ).to(device)
 
         # Fully connected layers for additional features
         self.fc_additional = nn.Sequential(
-            nn.Linear(num_additional_features, 64),
+            nn.Linear(num_additional_features, 128),
             nn.ReLU(),
-            # Add more layers if needed
+            nn.Dropout(0.4),  # Increased Dropout to 0.4
         ).to(device)
 
         # Placeholder for dynamically computed flattened size
@@ -76,11 +88,10 @@ class TrafficStatusCNN(nn.Module):
             )
             # Initialize fully connected layers with the calculated flattened size
             self.fc_combined = nn.Sequential(
-                nn.Linear(
-                    self.flattened_size + 64, 128
-                ),  # Adjust based on your fc_additional output size
+                nn.Linear(self.flattened_size + 128, 256),
                 nn.ReLU(),
-                nn.Linear(128, 4),  # Output layer for 3 classes
+                nn.Dropout(0.5),  # Increased dropout to 0.5
+                nn.Linear(256, self.num_classes),
             ).to(self.device)
 
         # Flatten the image features

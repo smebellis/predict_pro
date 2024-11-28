@@ -62,7 +62,7 @@ class FeatureEngineeringPipeline:
 
         # Initialize PCA
         self.pca = PCA(
-            n_components=10
+            n_components=0.95
         )  # Set n_components based on desired dimensionality
 
         logger.info(

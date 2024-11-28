@@ -58,13 +58,13 @@ logger = get_logger(__name__)
 
 parser = argparse.ArgumentParser(description="Train TrafficStatusCNN model.")
 parser.add_argument(
-    "--batch_size", type=int, default=64, help="Batch size for training"
+    "--batch_size", type=int, default=16, help="Batch size for training"
 )
 parser.add_argument(
-    "--learning_rate", type=float, default=1e-4, help="Learning rate for optimizer"
+    "--learning_rate", type=float, default=1e-3, help="Learning rate for optimizer"
 )  # Adjusted learning rate
 parser.add_argument(
-    "--num_epochs", type=int, default=100, help="Number of training epochs"
+    "--num_epochs", type=int, default=1000, help="Number of training epochs"
 )
 parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
 parser.add_argument(
@@ -340,11 +340,11 @@ def main():
     class_weights = torch.tensor(class_weights, dtype=torch.float32).to(device)
 
     criterion = nn.CrossEntropyLoss(weight=class_weights).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
 
     # Learning rate scheduler
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.1, patience=3
+        optimizer, mode="min", factor=0.05, patience=2, min_lr=1e-6
     )
     logger.info("Initialized optimizer and scheduler.")
 
@@ -395,16 +395,18 @@ def main():
             saved_models_queue = pickle.load(f)
         logger.info("Loaded saved model queue.")
     else:
-        saved_models_queue = deque(maxlen=max_saved_models)
-
+        saved_models_queue = deque()
+        logger.info("Initialized saved models queue.")
     if os.path.exists(saved_metrics_queue_path):
         with open(saved_metrics_queue_path, "rb") as f:
             saved_metrics_queue = pickle.load(f)
         logger.info("Loaded saved metrics queue.")
     else:
-        saved_metrics_queue = deque(maxlen=max_saved_metrics)
-
+        saved_metrics_queue = deque()
+        logger.info("Initialized saved metrics queue.")
     # Training loop
+
+    accumulation_steps = 4
     for epoch in range(num_epochs):
         model.train()
         running_loss = 0.0
@@ -432,8 +434,8 @@ def main():
             if torch.isnan(labels).any():
                 logger.error(f"NaN detected in labels at batch {batch_idx}")
 
-            # Zero the parameter gradients
-            optimizer.zero_grad()
+            # # Zero the parameter gradients
+            # optimizer.zero_grad()
 
             # Forward pass
             outputs = model(images, additional_features)
@@ -443,7 +445,7 @@ def main():
                 logger.error(f"NaN detected in outputs at batch {batch_idx}")
 
             loss = criterion(outputs, labels)
-
+            loss = loss / accumulation_steps
             # Check for NaNs in loss
             if torch.isnan(loss).any():
                 logger.error(f"NaN detected in loss at batch {batch_idx}")
@@ -452,6 +454,16 @@ def main():
             loss.backward()
             torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
 
+            # Perform optimization step every `accumulation_steps` mini-batches
+            if (batch_idx + 1) % accumulation_steps == 0:
+                # Clip gradients if necessary
+                torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
+
+                # Update model parameters
+                optimizer.step()
+
+                # Clear gradients for the next round of accumulation
+                optimizer.zero_grad()
             # Log gradient norms
             total_norm = 0
             for p in model.parameters():
@@ -459,12 +471,10 @@ def main():
                     param_norm = p.grad.data.norm(2)
                     total_norm += param_norm.item() ** 2
             total_norm = total_norm**0.5
-            if batch_idx % 10 == 0:
+            if batch_idx % 100 == 0:
                 logger.debug(
                     f"Epoch [{epoch+1}/{num_epochs}] Batch [{batch_idx+1}/{len(train_loader)}] - Gradient Norm: {total_norm:.4f}"
                 )
-
-            optimizer.step()
 
             # Statistics
             running_loss += loss.item()
@@ -498,7 +508,7 @@ def main():
             f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%"
         )
         # Step the scheduler
-        scheduler.step(val_loss)
+        scheduler.step(val_accuracy)
 
         # Early stopping check
         min_improvement = 1e-3

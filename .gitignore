@@ -126,3 +126,4 @@ dmypy.json
 preprocessed_tensors/*.pt
 preprocessed_tensors/original_feature_engineering/*.pt
 pickle_files/*.pkl
+runs/traffic_status/*.*

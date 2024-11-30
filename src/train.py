@@ -188,19 +188,19 @@ def evaluate(model, dataloader, criterion, device):
             all_labels, all_predictions, target_names=class_names, zero_division=0
         )
 
-        # Calculate other metrics
-        metrics = {
-            "Accuracy": accuracy_score(all_labels, all_predictions)
-            * 100,  # Convert to percentage
-            "Precision": precision_score(
-                all_labels, all_predictions, average="weighted", zero_division=0
-            ),
-            "Recall": recall_score(
-                all_labels, all_predictions, average="weighted", zero_division=0
-            ),
-            "F1 Score": f1_score(all_labels, all_predictions, average="weighted"),
-            "Confusion Matrix": confusion_matrix(all_labels, all_predictions),
-        }
+    # Calculate other metrics
+    metrics = {
+        "Accuracy": accuracy_score(all_labels, all_predictions)
+        * 100,  # Convert to percentage
+        "Precision": precision_score(
+            all_labels, all_predictions, average="weighted", zero_division=0
+        ),
+        "Recall": recall_score(
+            all_labels, all_predictions, average="weighted", zero_division=0
+        ),
+        "F1 Score": f1_score(all_labels, all_predictions, average="weighted"),
+        "Confusion Matrix": confusion_matrix(all_labels, all_predictions),
+    }
     logger.info(f"Classification Report:\n{report}")
 
     return avg_loss, accuracy, metrics
@@ -361,18 +361,12 @@ def main():
         "balanced", classes=np.unique(labels), y=labels
     )
     class_weights = torch.tensor(class_weights, dtype=torch.float32).to(device)
-
     criterion = nn.CrossEntropyLoss(weight=class_weights)
-
-    # optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-3)
     optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-3)
-    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-    #     optimizer, mode="min", factor=0.1, patience=2, min_lr=1e-6
-    # )
     scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
         optimizer, T_0=10, T_mult=2
     )
-    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+
     logger.info("Initialized optimizer and scheduler.")
 
     # Early stopping variables
@@ -394,8 +388,6 @@ def main():
         os.makedirs(models_dir, exist_ok=True)
         logger.info(f"Created directory: {models_dir}")
 
-    # Initialize or load existing metrics
-    # Note: Metrics will be saved with a timestamp later in the code
     metrics = {
         "train_accuracies": [],
         "train_losses": [],
@@ -434,11 +426,10 @@ def main():
     else:
         saved_metrics_queue = deque()
         logger.info("Initialized saved metrics queue.")
-    # Training loop
+
     # Training loop
     accumulation_steps = 4
     max_grad_norm = 1.0
-    scaler = GradScaler()
 
     for epoch in range(num_epochs):
         model.train()
@@ -464,22 +455,12 @@ def main():
                 )
             if torch.isnan(labels).any():
                 logger.error(f"NaN detected in labels at batch {batch_idx}")
-            # Use autocast to handle mixed precision
-            with autocast(device_type="cuda"):
-                outputs = model(images, additional_features)
-                loss = criterion(outputs, labels) / accumulation_steps
 
-            # Scale the loss
-            scaler.scale(loss).backward()
+            outputs = model(images, additional_features)
+            loss = criterion(outputs, labels) / accumulation_steps
 
-            # Forward pass
-            # outputs = model(images, additional_features)
-
-            # # Compute loss
-            # loss = criterion(outputs, labels) / accumulation_steps
-
-            # # Backward pass
-            # loss.backward()
+            # Backward pass
+            loss.backward()
 
             # Perform optimization step every `accumulation_steps` mini-batches
             if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == len(
@@ -487,8 +468,8 @@ def main():
             ):
                 # Clip gradients before optimizer step
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
-                scaler.step(optimizer)
-                scaler.update()
+                optimizer.step()
+                # scaler.update()
 
                 # Log gradients and parameters to TensorBoard
                 for name, param in model.named_parameters():

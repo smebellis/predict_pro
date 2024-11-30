@@ -5,6 +5,7 @@ import random
 import time
 from collections import deque
 from typing import Tuple
+from torch.utils.tensorboard import SummaryWriter
 
 import cv2
 import numpy as np
@@ -28,7 +29,9 @@ from sklearn.metrics import (
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
-from torch.cuda.amp import GradScaler, autocast
+from torch.amp import GradScaler, autocast
+
+# from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, Dataset
 from torchvision.models import resnet18
 
@@ -75,7 +78,7 @@ parser.add_argument(
 parser.add_argument(
     "--num_epochs", type=int, default=250, help="Number of training epochs"
 )
-parser.add_argument("--patience", type=int, default=15, help="Early stopping patience")
+parser.add_argument("--patience", type=int, default=20, help="Early stopping patience")
 parser.add_argument(
     "--preprocessed_dir",
     type=str,
@@ -239,6 +242,10 @@ def get_class_names(label_encoder_path: str, unique_labels: np.ndarray) -> list:
 
 
 def main():
+
+    # Initialize TensorBoard SummaryWriter
+    log_dir = "runs/traffic_status"  # You can customize this directory name
+    writer = SummaryWriter(log_dir=log_dir)
     # Device configuration
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     logger.info(f"Using Device: {device}")
@@ -357,10 +364,13 @@ def main():
 
     criterion = nn.CrossEntropyLoss(weight=class_weights)
 
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-3)
-
-    scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.1, patience=2, min_lr=1e-6
+    # optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-3)
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate, weight_decay=1e-3)
+    # scheduler = optim.lr_scheduler.ReduceLROnPlateau(
+    #     optimizer, mode="min", factor=0.1, patience=2, min_lr=1e-6
+    # )
+    scheduler = optim.lr_scheduler.CosineAnnealingWarmRestarts(
+        optimizer, T_0=10, T_mult=2
     )
     # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     logger.info("Initialized optimizer and scheduler.")
@@ -379,7 +389,10 @@ def main():
         os.makedirs(metrics_dir, exist_ok=True)
         logger.info(f"Created directory: {metrics_dir}")
 
-    metrics_path = os.path.join(metrics_dir, "metrics_incremental.pkl")
+    models_dir = "models"
+    if not os.path.exists(metrics_dir):
+        os.makedirs(models_dir, exist_ok=True)
+        logger.info(f"Created directory: {models_dir}")
 
     # Initialize or load existing metrics
     # Note: Metrics will be saved with a timestamp later in the code
@@ -425,6 +438,7 @@ def main():
     # Training loop
     accumulation_steps = 4
     max_grad_norm = 1.0
+    scaler = GradScaler()
 
     for epoch in range(num_epochs):
         model.train()
@@ -450,15 +464,22 @@ def main():
                 )
             if torch.isnan(labels).any():
                 logger.error(f"NaN detected in labels at batch {batch_idx}")
+            # Use autocast to handle mixed precision
+            with autocast(device_type="cuda"):
+                outputs = model(images, additional_features)
+                loss = criterion(outputs, labels) / accumulation_steps
+
+            # Scale the loss
+            scaler.scale(loss).backward()
 
             # Forward pass
-            outputs = model(images, additional_features)
+            # outputs = model(images, additional_features)
 
-            # Compute loss
-            loss = criterion(outputs, labels) / accumulation_steps
+            # # Compute loss
+            # loss = criterion(outputs, labels) / accumulation_steps
 
-            # Backward pass
-            loss.backward()
+            # # Backward pass
+            # loss.backward()
 
             # Perform optimization step every `accumulation_steps` mini-batches
             if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == len(
@@ -466,7 +487,15 @@ def main():
             ):
                 # Clip gradients before optimizer step
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
-                optimizer.step()
+                scaler.step(optimizer)
+                scaler.update()
+
+                # Log gradients and parameters to TensorBoard
+                for name, param in model.named_parameters():
+                    if param.grad is not None:  # Make sure the gradient exists
+                        writer.add_histogram(f"{name}_grad", param.grad, epoch)
+                    writer.add_histogram(name, param, epoch)
+
                 optimizer.zero_grad()  # Reset gradients after step
 
             # Statistics
@@ -495,6 +524,10 @@ def main():
         metrics["train_losses"].append(epoch_loss)
         metrics["train_accuracies"].append(accuracy)
 
+        # Log training metrics to TensorBoard
+        writer.add_scalar("Training Loss", epoch_loss, epoch)
+        writer.add_scalar("Training Accuracy", accuracy, epoch)
+
         logger.info(
             f"Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}, Accuracy: {accuracy:.2f}%"
         )
@@ -510,6 +543,16 @@ def main():
         metrics["val_precision"].append(val_metrics["Precision"])
         metrics["val_recall"].append(val_metrics["Recall"])
         metrics["val_f1_score"].append(val_metrics["F1 Score"])
+
+        # Log validation metrics to TensorBoard
+        writer.add_scalar("Validation Loss", val_loss, epoch)
+        writer.add_scalar("Validation Accuracy", val_accuracy, epoch)
+
+        # Optionally, log more metrics such as Precision, Recall, and F1 Score
+        writer.add_scalar("Validation Precision", val_metrics["Precision"], epoch)
+        writer.add_scalar("Validation Recall", val_metrics["Recall"], epoch)
+        writer.add_scalar("Validation F1 Score", val_metrics["F1 Score"], epoch)
+
         # metrics["val_confusion_matrices"].append(val_metrics["Confusion Matrix"])
         logger.info(
             f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%"

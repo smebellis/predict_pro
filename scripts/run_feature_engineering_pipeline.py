@@ -20,6 +20,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 from src.FeatureEngineering import (
     FeatureEngineeringPipeline,
     EnhancedFeatureEngineeringPipeline,
+    FeatureEngineeringPipelineWithEmbeddings,
 )
 from src.logger import get_logger
 from src.helper import read_csv_with_progress
@@ -183,10 +184,11 @@ if __name__ == "__main__":
             raise e
 
         # Test with a small sample, comment out the lines below to run on the whole dataset
-        # df = df.sample(n=4000, random_state=42)
+        # df = df.sample(n=1000, random_state=42)
 
         columns_to_drop = ["TRIP_ID", "ROUTE", "CALL_TYPE", "TAXI_ID", "DAY_TYPE"]
         df = df.drop(columns=columns_to_drop)
+        logger.info(f"Dropped the following columns: {columns_to_drop}")
         # Converting POLYLINE string into List
         logger.info("Using Swifter to convert POLYLINE to list")
         df["POLYLINE"] = df["POLYLINE"].swifter.apply(
@@ -195,39 +197,14 @@ if __name__ == "__main__":
         logger.info("Completed POLYLINE to list conversion")
     # Split the dataset into training, validation, and test sets
     logger.info("Spliting the dataset into training, validation, and test sets.")
-    train_df, temp_df = train_test_split(df, test_size=0.2, random_state=42)
-    val_df, test_df = train_test_split(temp_df, test_size=0.5, random_state=42)
+    y = df["TRAFFIC_STATUS"]
+    train_df, temp_df = train_test_split(df, test_size=0.2, stratify=y, random_state=42)
+    val_df, test_df = train_test_split(
+        temp_df, test_size=0.5, stratify=temp_df["TRAFFIC_STATUS"], random_state=42
+    )
     logger.info(
         "Completed splitting the dataset into training, validation, and test sets."
     )
-
-    # ============================
-    # Debugging for large values
-    # ============================
-
-    # Define a reasonable threshold for your use case (e.g., 1e15 or some domain-specific value)
-    # threshold = 1e15
-
-    # # Check for any values that exceed the threshold in the dataframe
-    # large_values = train_df.select_dtypes(include=[np.number]) > threshold
-    # if large_values.any().any():
-    #     print(
-    #         "The dataframe contains values that are too large for practical float64 usage."
-    #     )
-    # else:
-    #     print("All values are within reasonable limits for float64.")
-    # # Get max and min values for each numeric column
-    # numeric_columns = train_df.select_dtypes(include=[np.number])
-
-    # # Find the max and min value for each numeric column
-    # max_values = numeric_columns.max()
-    # min_values = numeric_columns.min()
-
-    # print("Maximum values for each column:")
-    # print(max_values)
-    # print("\nMinimum values for each column:")
-    # print(min_values)
-    # breakpoint()
 
     # Save pickle files for baseline testing
     save_as_pkl(train_df, "train", PICKLE_DIR)
@@ -239,6 +216,8 @@ if __name__ == "__main__":
 
     # Initialize the Enhanced feature engineering pipeline
     # pipeline = EnhancedFeatureEngineeringPipeline()
+    # Initialize the feature engineering pipeline
+    # pipeline = FeatureEngineeringPipelineWithEmbeddings()
 
     # Fit the pipeline on the training set and transform all sets
     logger.info("Fitting the feature engineering pipeline on the training set.")
@@ -254,6 +233,15 @@ if __name__ == "__main__":
     label_encoder = LabelEncoder()
 
     label_encoder.fit(train_df["TRAFFIC_STATUS"])
+    # Encode the labels for validation and test sets
+    y_train_encoded = label_encoder.transform(train_df["TRAFFIC_STATUS"])
+    y_val_encoded = label_encoder.transform(val_df["TRAFFIC_STATUS"])
+    y_test_encoded = label_encoder.transform(test_df["TRAFFIC_STATUS"])
+
+    # Debug output to verify encoding
+    logger.info("Encoded labels in training set: %s", np.unique(y_train_encoded))
+    logger.info("Encoded labels in validation set: %s", np.unique(y_val_encoded))
+    logger.info("Encoded labels in test set: %s", np.unique(y_test_encoded))
 
     # Create a directory to save pickle files for later processing
     pickle_dir = "pickle_files"

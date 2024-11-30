@@ -1,24 +1,55 @@
 import ast
 import json
 import math
+import os
 import sys
 from collections import Counter, defaultdict
 from typing import Any, List
 
+import matplotlib.pyplot as plt
+import seaborn as sns
 import numpy as np
 import pandas as pd
 from hdbscan import HDBSCAN
 from sklearn.cluster import KMeans
+from sklearn.decomposition import PCA
 from sklearn.exceptions import NotFittedError
 from sklearn.preprocessing import StandardScaler
 from sklearn.decomposition import PCA
+from sklearn.metrics import silhouette_score
 from tqdm import tqdm
 
 from src.districts import DistrictLoadError, load_districts
+from src.helper import read_csv_with_progress, save_dataframe_if_not_exists
 from src.logger import get_logger
-from src.helper import save_dataframe_if_not_exists
 
 logger = get_logger(__name__)
+
+
+# Function to parse POLYLINE data
+def parse_polyline(polyline_str):
+    try:
+        polyline = json.loads(polyline_str)
+        if not isinstance(polyline, list) or len(polyline) < 2:
+            raise ValueError("Polyline must be a list with at least two points.")
+        return polyline
+    except (json.JSONDecodeError, ValueError) as e:
+        logger.warning(f"Invalid POLYLINE format: {e}")
+        return None
+
+
+def determine_optimal_clusters(data, max_k=10):
+    inertia_values = []
+    for k in range(1, max_k + 1):
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(data)
+        inertia_values.append(kmeans.inertia_)
+
+    plt.plot(range(1, max_k + 1), inertia_values, "bx-")
+    plt.xlabel("Number of clusters")
+    plt.ylabel("Inertia")
+    plt.title("Elbow Method For Optimal k")
+    plt.show()
 
 
 def extract_features(polyline):
@@ -33,8 +64,27 @@ def extract_features(polyline):
     num_turns = len(polyline_points) - 2  # Simplistic turn count
     bounding_box = polyline_points.max(axis=0) - polyline_points.min(axis=0)
     variance = polyline_points.var(axis=0).sum()
+    # New features
+    curvature = np.sum(
+        np.abs(np.diff(np.diff(polyline_points, axis=0), axis=0))
+    )  # Curvature estimate
+    segment_lengths = np.linalg.norm(np.diff(polyline_points, axis=0), axis=1)
+    length_mean = np.mean(segment_lengths)
+    length_variance = np.var(segment_lengths)
+
     return np.concatenate(
-        [mean_coords, [total_length, num_turns, *bounding_box, variance]]
+        [
+            mean_coords,
+            [
+                total_length,
+                num_turns,
+                *bounding_box,
+                variance,
+                curvature,
+                length_mean,
+                length_variance,
+            ],
+        ]
     )
 
 
@@ -581,8 +631,8 @@ def aggregate_historical_data(df: pd.DataFrame) -> pd.DataFrame:
 
 if __name__ == "__main__":
     np.seterr(divide="ignore", invalid="ignore")
-    df = pd.read_csv(
-        "/home/smebellis/ece5831_final_project/processed_data/clustered_dataset.csv"
+    df = read_csv_with_progress(
+        "/home/smebellis/ece5831_final_project/processed_data/preprocessed_dataset.csv"
     )
 
     sample_df = df.sample(n=50000, random_state=42)
@@ -604,7 +654,7 @@ if __name__ == "__main__":
     sample_df = aggregate_district_clusters(sample_df)
     sample_df = traffic_congestion_indicator(sample_df)
     sample_df = add_temporal_context(sample_df)
-    sample_df = aggregate_historical_data(sample_df)
+    # sample_df = aggregate_historical_data(sample_df)
     print(
         sample_df[
             [
@@ -619,26 +669,45 @@ if __name__ == "__main__":
         ].head()
     )
     breakpoint()
-
     import matplotlib.pyplot as plt
     import seaborn as sns
 
-    # Histogram of Membership Quality
-    plt.figure(figsize=(10, 6))
-    sns.histplot(sample_df["MEMBERSHIP_QUALITY"], bins=50, kde=True)
-    plt.title("Distribution of Membership Quality")
-    plt.xlabel("Membership Quality")
+    # Set the style for seaborn
+    sns.set(style="whitegrid")
+
+    # Plot histogram for OUTLIER_SCORE
+    plt.figure(figsize=(12, 6))
+    sns.histplot(sample_df["OUTLIER_SCORE"], bins=50, kde=True, color="skyblue")
+    plt.title("Distribution of OUTLIER_SCORE")
+    plt.xlabel("OUTLIER_SCORE")
     plt.ylabel("Frequency")
     plt.show()
 
-    # Boxplot by Cluster
-    plt.figure(figsize=(12, 8))
-    sns.boxplot(x="CLUSTER", y="MEMBERSHIP_QUALITY", data=df)
-    plt.title("Membership Quality by Cluster")
-    plt.xlabel("Cluster")
-    plt.ylabel("Membership Quality")
+    # Plot histogram for DOM (Degree of Membership)
+    plt.figure(figsize=(12, 6))
+    sns.histplot(sample_df["DOM"], bins=50, kde=True, color="orange")
+    plt.title("Distribution of DOM (Degree of Membership)")
+    plt.xlabel("DOM")
+    plt.ylabel("Frequency")
     plt.show()
+
+    # Scatter plot to visualize relationship between OUTLIER_SCORE and DOM
+    plt.figure(figsize=(10, 6))
+    sns.scatterplot(x="OUTLIER_SCORE", y="DOM", data=sample_df, alpha=0.5)
+    plt.title("Scatter Plot of OUTLIER_SCORE vs. DOM")
+    plt.xlabel("OUTLIER_SCORE")
+    plt.ylabel("DOM")
+    plt.show()
+
     breakpoint()
+    # # Boxplot by Cluster
+    # plt.figure(figsize=(12, 8))
+    # sns.boxplot(x="CLUSTER", y="MEMBERSHIP_QUALITY", data=df)
+    # plt.title("Membership Quality by Cluster")
+    # plt.xlabel("Cluster")
+    # plt.ylabel("Membership Quality")
+    # plt.show()
+    # breakpoint()
     # df = determine_traffic_status(df)
 
     # save_dataframe_if_not_exists(

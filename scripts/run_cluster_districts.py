@@ -1,5 +1,7 @@
 import os
 import sys
+import swifter
+import ast
 
 import numpy as np
 
@@ -11,6 +13,7 @@ from src.cluster_districts import (
     cluster_trip_district,
     cluster_trip_time,
     determine_traffic_status_by_quality,
+    determine_traffic_status,
     encode_geographical_context,
     aggregate_district_clusters,
     traffic_congestion_indicator,
@@ -22,6 +25,7 @@ from src.helper import (
     parse_arguments,
     read_csv_with_progress,
     save_dataframe_if_not_exists,
+    save_dataframe_overwrite,
 )
 from src.logger import get_logger
 
@@ -48,19 +52,26 @@ def main():
 
     try:
         df = read_csv_with_progress(args.input)
-        # df = df.sample(n=5000, random_state=42)
+        df = df.sample(n=250000, random_state=42)
         logger.info("CSV file read successfully.")
+
+        # Check if 'DISTRICT_NAME' column exists
+        if "DISTRICT_NAME" not in df.columns:
+            logger.error(
+                "The required 'DISTRICT_NAME' column is missing in the input CSV."
+            )
+            sys.exit(1)
         clustered_df = cluster_trip_district(df, porto_districts)
         clustered_df = cluster_trip_time(clustered_df)
 
         clustered_df = HDBSCAN_Clustering_Aggregated_optimized(clustered_df)
-        clustered_df = determine_traffic_status_by_quality(clustered_df)
+        clustered_df = determine_traffic_status(clustered_df)
         clustered_df = encode_geographical_context(clustered_df)
         clustered_df = aggregate_district_clusters(clustered_df)
         clustered_df = traffic_congestion_indicator(clustered_df)
         clustered_df = add_temporal_context(clustered_df)
         # clustered_df = aggregate_historical_data(clustered_df)
-        save_dataframe_if_not_exists(clustered_df, args.save)
+        save_dataframe_overwrite(clustered_df, args.save)
         logger.info(f"Clustered DataFrame Save to {args.save}")
     except Exception as e:
         logger.error(f"Failed to read CSV file: {e}")

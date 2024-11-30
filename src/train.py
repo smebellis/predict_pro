@@ -11,7 +11,9 @@ import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 import torch.optim as optim
+from imblearn.over_sampling import SMOTE
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -19,16 +21,23 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
+    mean_absolute_error,
+    root_mean_squared_error,
+    r2_score,
 )
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import LabelEncoder
+from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
+from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, Dataset
+from torchvision.models import resnet18
 
+from CustomResnet18 import CustomResNet18
+from LabelSmoothingLoss import LabelSmoothingLoss
 from logger import get_logger
-
-from TrafficStatusCNN import TrafficStatusCNN
+from SimpleCNN import SimpleCNNWithAdditionalFeatures
 from TrafficDataset import TrafficDataset
+from TrafficStatusCNN import TrafficStatusCNN
 
 # ============================
 # Configuration and Setup
@@ -58,15 +67,15 @@ logger = get_logger(__name__)
 
 parser = argparse.ArgumentParser(description="Train TrafficStatusCNN model.")
 parser.add_argument(
-    "--batch_size", type=int, default=16, help="Batch size for training"
+    "--batch_size", type=int, default=128, help="Batch size for training"
 )
 parser.add_argument(
     "--learning_rate", type=float, default=1e-3, help="Learning rate for optimizer"
 )  # Adjusted learning rate
 parser.add_argument(
-    "--num_epochs", type=int, default=1000, help="Number of training epochs"
+    "--num_epochs", type=int, default=250, help="Number of training epochs"
 )
-parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
+parser.add_argument("--patience", type=int, default=15, help="Early stopping patience")
 parser.add_argument(
     "--preprocessed_dir",
     type=str,
@@ -175,19 +184,21 @@ def evaluate(model, dataloader, criterion, device):
         report = classification_report(
             all_labels, all_predictions, target_names=class_names, zero_division=0
         )
-    # Calculate other metrics
-    metrics = {
-        "Accuracy": accuracy_score(all_labels, all_predictions),
-        "Precision": precision_score(
-            all_labels, all_predictions, average="weighted", zero_division=0
-        ),
-        "Recall": recall_score(
-            all_labels, all_predictions, average="weighted", zero_division=0
-        ),
-        "F1 Score": f1_score(all_labels, all_predictions, average="weighted"),
-        "Confusion Matrix": confusion_matrix(all_labels, all_predictions),
-    }
-    # logger.info(f"Classification Report:\n{report}")
+
+        # Calculate other metrics
+        metrics = {
+            "Accuracy": accuracy_score(all_labels, all_predictions)
+            * 100,  # Convert to percentage
+            "Precision": precision_score(
+                all_labels, all_predictions, average="weighted", zero_division=0
+            ),
+            "Recall": recall_score(
+                all_labels, all_predictions, average="weighted", zero_division=0
+            ),
+            "F1 Score": f1_score(all_labels, all_predictions, average="weighted"),
+            "Confusion Matrix": confusion_matrix(all_labels, all_predictions),
+        }
+    logger.info(f"Classification Report:\n{report}")
 
     return avg_loss, accuracy, metrics
 
@@ -291,16 +302,23 @@ def main():
 
     # Create datasets
     train_dataset = TrafficDataset(
-        train_route_images_tensor, train_additional_features_tensor, train_labels_tensor
+        train_route_images_tensor,
+        train_additional_features_tensor,
+        train_labels_tensor,
     )
     val_dataset = TrafficDataset(
-        val_route_images_tensor, val_additional_features_tensor, val_labels_tensor
+        val_route_images_tensor,
+        val_additional_features_tensor,
+        val_labels_tensor,
     )
     test_dataset = TrafficDataset(
-        test_route_images_tensor, test_additional_features_tensor, test_labels_tensor
+        test_route_images_tensor,
+        test_additional_features_tensor,
+        test_labels_tensor,
     )
 
     # Hyperparameters
+    # batch_size = args.batch_size
     batch_size = args.batch_size
     learning_rate = args.learning_rate
     num_epochs = args.num_epochs
@@ -310,7 +328,7 @@ def main():
 
     # DataLoaders
     train_loader = DataLoader(
-        train_dataset, batch_size=batch_size, shuffle=True, drop_last=True
+        train_dataset, batch_size=batch_size, shuffle=True, drop_last=False
     )
     val_loader = DataLoader(
         val_dataset,
@@ -325,13 +343,11 @@ def main():
         drop_last=False,  # Changed drop_last to False
     )
 
-    # Initialize model, loss function, and optimizer
     model = TrafficStatusCNN(
-        num_additional_features=train_additional_features_tensor.size(1), device=device
+        num_additional_features=train_additional_features_tensor.size(1),
+        device=device,
     ).to(device)
 
-    # Compute class weights to deal with class imbalance
-    # class_weights = torch.tensor([1.0, 1.0, 5.0, 5.0], dtype=torch.float32).to(device)
     # Dynamic Class Weights
     labels = train_labels_tensor.cpu().numpy()
     class_weights = compute_class_weight(
@@ -339,13 +355,14 @@ def main():
     )
     class_weights = torch.tensor(class_weights, dtype=torch.float32).to(device)
 
-    criterion = nn.CrossEntropyLoss(weight=class_weights).to(device)
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-4)
+    criterion = nn.CrossEntropyLoss(weight=class_weights)
 
-    # Learning rate scheduler
+    optimizer = optim.Adam(model.parameters(), lr=learning_rate, weight_decay=1e-3)
+
     scheduler = optim.lr_scheduler.ReduceLROnPlateau(
-        optimizer, mode="min", factor=0.05, patience=2, min_lr=1e-6
+        optimizer, mode="min", factor=0.1, patience=2, min_lr=1e-6
     )
+    # scheduler = optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     logger.info("Initialized optimizer and scheduler.")
 
     # Early stopping variables
@@ -405,15 +422,15 @@ def main():
         saved_metrics_queue = deque()
         logger.info("Initialized saved metrics queue.")
     # Training loop
-
+    # Training loop
     accumulation_steps = 4
+    max_grad_norm = 1.0
+
     for epoch in range(num_epochs):
         model.train()
         running_loss = 0.0
         correct = 0
         total = 0
-
-        max_grad_norm = 1.0
 
         for batch_idx, (images, additional_features, labels) in enumerate(train_loader):
             # Adjust image dimensions if necessary
@@ -434,54 +451,45 @@ def main():
             if torch.isnan(labels).any():
                 logger.error(f"NaN detected in labels at batch {batch_idx}")
 
-            # # Zero the parameter gradients
-            # optimizer.zero_grad()
-
             # Forward pass
             outputs = model(images, additional_features)
 
-            # Check for NaNs in outputs
-            if torch.isnan(outputs).any():
-                logger.error(f"NaN detected in outputs at batch {batch_idx}")
+            # Compute loss
+            loss = criterion(outputs, labels) / accumulation_steps
 
-            loss = criterion(outputs, labels)
-            loss = loss / accumulation_steps
-            # Check for NaNs in loss
-            if torch.isnan(loss).any():
-                logger.error(f"NaN detected in loss at batch {batch_idx}")
-
-            # Backward pass and optimization
+            # Backward pass
             loss.backward()
-            torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
 
             # Perform optimization step every `accumulation_steps` mini-batches
-            if (batch_idx + 1) % accumulation_steps == 0:
-                # Clip gradients if necessary
+            if (batch_idx + 1) % accumulation_steps == 0 or (batch_idx + 1) == len(
+                train_loader
+            ):
+                # Clip gradients before optimizer step
                 torch.nn.utils.clip_grad_norm_(model.parameters(), max_grad_norm)
-
-                # Update model parameters
                 optimizer.step()
-
-                # Clear gradients for the next round of accumulation
-                optimizer.zero_grad()
-            # Log gradient norms
-            total_norm = 0
-            for p in model.parameters():
-                if p.grad is not None:
-                    param_norm = p.grad.data.norm(2)
-                    total_norm += param_norm.item() ** 2
-            total_norm = total_norm**0.5
-            if batch_idx % 100 == 0:
-                logger.debug(
-                    f"Epoch [{epoch+1}/{num_epochs}] Batch [{batch_idx+1}/{len(train_loader)}] - Gradient Norm: {total_norm:.4f}"
-                )
+                optimizer.zero_grad()  # Reset gradients after step
 
             # Statistics
-            running_loss += loss.item()
+            running_loss += (
+                loss.item() * accumulation_steps
+            )  # Undo division for logging
             _, predicted = torch.max(outputs, 1)
             total += labels.size(0)
             correct += (predicted == labels).sum().item()
 
+            # Log gradient norm (optional)
+            if batch_idx % 100 == 0:
+                total_norm = 0
+                for p in model.parameters():
+                    if p.grad is not None:
+                        param_norm = p.grad.data.norm(2)
+                        total_norm += param_norm.item() ** 2
+                total_norm = total_norm**0.5
+                logger.debug(
+                    f"Epoch [{epoch+1}/{num_epochs}] Batch [{batch_idx+1}/{len(train_loader)}] - Gradient Norm: {total_norm:.4f}"
+                )
+
+        # Epoch statistics
         epoch_loss = running_loss / len(train_loader)
         accuracy = 100 * correct / total
         metrics["train_losses"].append(epoch_loss)
@@ -495,11 +503,10 @@ def main():
         val_loss, val_accuracy, val_metrics = evaluate(
             model, val_loader, criterion, device
         )
-        # metrics["val_losses"].append(val_loss)
-        # metrics["val_accuracies"].append(val_accuracy)
-        # metrics["val_metrics"] = val_metrics  # Store validation metrics
         metrics["val_losses"].append(val_loss)
-        metrics["val_accuracies"].append(val_metrics["Accuracy"])
+        metrics["val_accuracies"].append(
+            val_accuracy
+        )  # Use the consistency of accuracy here
         metrics["val_precision"].append(val_metrics["Precision"])
         metrics["val_recall"].append(val_metrics["Recall"])
         metrics["val_f1_score"].append(val_metrics["F1 Score"])
@@ -507,27 +514,26 @@ def main():
         logger.info(
             f"Validation Loss: {val_loss:.4f}, Validation Accuracy: {val_accuracy:.2f}%"
         )
-        # Step the scheduler
-        scheduler.step(val_accuracy)
+
+        # Step the scheduler and log learning rate
+        scheduler.step(val_loss)
+        for param_group in optimizer.param_groups:
+            current_lr = param_group["lr"]
+            logger.info(f"Learning rate adjusted to: {current_lr:.6f}")
 
         # Early stopping check
-        min_improvement = 1e-3
-        improvement = best_val_loss - val_loss
-
-        if improvement > min_improvement:
+        if val_loss < best_val_loss:
             best_val_loss = val_loss
             patience_counter = 0
             # Save the best model
-            torch.save(model.state_dict(), best_model_path)
+            torch.save(model.state_dict(), "best_model.pth")
             logger.info(f"Best model saved with Validation Loss: {best_val_loss:.4f}")
-            logger.info(f"Validation Loss Improvement: {improvement:.6f}")
         else:
             patience_counter += 1
             logger.info(
-                f"No significant improvement in Validation Loss. Patience: {patience_counter}/{patience}"
+                f"No improvement in Validation Loss. Patience: {patience_counter}/{patience}"
             )
 
-        # Early stopping logic
         if patience_counter >= patience:
             logger.info("Early stopping triggered.")
             break

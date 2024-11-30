@@ -8,11 +8,14 @@ from sklearn.metrics import (
     roc_auc_score,
     confusion_matrix,
 )
-
+from sklearn.ensemble import RandomForestClassifier
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.inspection import permutation_importance
 from sklearn.dummy import DummyClassifier
-from helper import plot_metrics
+from sklearn.feature_selection import RFE
+from sklearn.linear_model import LogisticRegression
+
+# from helper import plot_metrics
 import matplotlib.pyplot as plt
 
 # Initialize the metrics dictionary
@@ -28,6 +31,7 @@ y_train = train_df["TRAFFIC_STATUS"]
 
 X_test = test_df.drop(columns=["TRAFFIC_STATUS"])
 y_test = test_df["TRAFFIC_STATUS"]
+
 
 # Zero-Rule Classifier (Most Frequent)
 zero_rule_clf = DummyClassifier(strategy="most_frequent")
@@ -82,7 +86,7 @@ metrics_df = pd.DataFrame(
 )
 print(metrics_df)
 
-# Save metrics to a pickle file
-metrics_df.to_pickle("pickle_files/baseline_metrics.pkl")
+# # Save metrics to a pickle file
+# metrics_df.to_pickle("pickle_files/baseline_metrics.pkl")
 
-plot_metrics(metrics)
+# plot_metrics(metrics)

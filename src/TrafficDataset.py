@@ -5,8 +5,16 @@ from torch.utils.data import DataLoader, Dataset
 from torchvision import transforms
 from logger import get_logger
 from typing import Tuple
+import numpy as np
+from PIL import Image
 
 logger = get_logger(__name__)
+
+
+def random_horizontal_flip(tensor, p=0.5):
+    if torch.rand(1).item() < p:
+        return tensor.flip(-1)  # Flip along the width axis
+    return tensor
 
 
 class TrafficDataset(Dataset):
@@ -36,6 +44,7 @@ class TrafficDataset(Dataset):
         self.route_images_tensor = route_images_tensor
         self.additional_features_tensor = additional_features_tensor
         self.labels_tensor = labels_tensor
+        self.transforms = transforms
         logger.info("Loaded all tensors successfully.")
         logger.info(f"Number of samples: {route_images_tensor.size(0)}")
 
@@ -60,4 +69,11 @@ class TrafficDataset(Dataset):
         route_image = self.route_images_tensor[index]
         additional_features = self.additional_features_tensor[index]
         label = self.labels_tensor[index]
+
+        # Ensure the image has a channel dimension
+        if route_image.dim() == 2:
+            route_image = route_image.unsqueeze(0)
+
+        # Apply manual tensor-based augmentation
+        route_image = random_horizontal_flip(route_image)
         return route_image, additional_features, label

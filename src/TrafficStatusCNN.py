@@ -10,7 +10,7 @@ class TrafficStatusCNN(nn.Module):
     def __init__(
         self,
         num_additional_features,
-        num_classes=4,
+        num_classes=3,
         device="cuda:0" if torch.cuda.is_available() else "cpu",
     ):
         super(TrafficStatusCNN, self).__init__()
@@ -36,7 +36,7 @@ class TrafficStatusCNN(nn.Module):
             nn.BatchNorm2d(128),  # Added Batch Normalization
             nn.ReLU(),
             nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Dropout(0.4),  # Increased Dropout to 0.4
+            nn.Dropout(p=0.3),  # Increased Dropout to 0.4
         ).to(device)
 
         # Fully connected layers for additional features

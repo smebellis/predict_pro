@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import pickle
 import torch
 from logger import get_logger
+import pandas as pd
 
 # from train import evaluate
 from TrafficStatusCNN import TrafficStatusCNN
@@ -68,9 +69,19 @@ def reload_and_evaluate_model(
 if __name__ == "__main__":
     # Load the metrics
     with open(
-        "/home/smebellis/ece5831_final_project/metrics/metrics_2024-11-28_0340.pkl",
+        "/home/smebellis/ece5831_final_project/metrics/metrics_2024-11-29_1717.pkl",
         "rb",
     ) as f:
         metrics = pickle.load(f)
+    last_epoch_metrics = {
+        "Accuracy": metrics["val_accuracies"][-1],
+        "Precision": metrics["val_precision"][-1],
+        "Recall": metrics["val_recall"][-1],
+        "F1 Score": metrics["val_f1_score"][-1],
+    }
 
+    # Creating a DataFrame for easier visualization
+    metrics_df = pd.DataFrame(last_epoch_metrics, index=["Validation Metrics"])
+    print(metrics_df)
+    breakpoint()
     plot_metrics(metrics)

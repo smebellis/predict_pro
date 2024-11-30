@@ -5,16 +5,14 @@ import random
 import time
 from collections import deque
 from typing import Tuple
-from torch.utils.tensorboard import SummaryWriter
 
 import cv2
 import numpy as np
 import pandas as pd
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import torch.optim as optim
-from imblearn.over_sampling import SMOTE
+
 from sklearn.metrics import (
     accuracy_score,
     classification_report,
@@ -22,23 +20,15 @@ from sklearn.metrics import (
     f1_score,
     precision_score,
     recall_score,
-    mean_absolute_error,
-    root_mean_squared_error,
-    r2_score,
 )
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import LabelEncoder, StandardScaler
 from sklearn.utils.class_weight import compute_class_weight
 from torch.amp import GradScaler, autocast
-
-# from torch.cuda.amp import GradScaler, autocast
 from torch.utils.data import DataLoader, Dataset
-from torchvision.models import resnet18
+from torch.utils.tensorboard import SummaryWriter
 
-from CustomResnet18 import CustomResNet18
-from LabelSmoothingLoss import LabelSmoothingLoss
 from logger import get_logger
-from SimpleCNN import SimpleCNNWithAdditionalFeatures
 from TrafficDataset import TrafficDataset
 from TrafficStatusCNN import TrafficStatusCNN
 

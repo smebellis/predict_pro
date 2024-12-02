@@ -35,10 +35,10 @@ os.makedirs(PICKLE_DIR, exist_ok=True)
 BATCH_SIZE = 1000
 # Paths
 input_path = (
-    "processed_data/clustered_dataset.csv"
+    "processed_data/clustered_data.csv"
 )
 output_path = (
-    "/home/smebellis/ece5831_final_project/processed_data/post_feature_engineered.csv"
+    "processed_data/post_feature_engineered.csv"
 )
 
 

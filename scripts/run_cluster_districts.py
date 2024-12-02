@@ -51,8 +51,8 @@ def main():
         sys.exit(1)
 
     try:
-        df = read_csv_with_progress(args.input)
-        df = df.sample(n=350000, random_state=42)
+        df = read_csv_with_progress(args.input_processed)
+        df = df.sample(n=5000, random_state=42)
         logger.info("CSV file read successfully.")
 
         # Check if 'DISTRICT_NAME' column exists

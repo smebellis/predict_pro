@@ -66,9 +66,9 @@ parser.add_argument(
     "--learning_rate", type=float, default=1e-3, help="Learning rate for optimizer"
 )  # Adjusted learning rate
 parser.add_argument(
-    "--num_epochs", type=int, default=250, help="Number of training epochs"
+    "--num_epochs", type=int, default=10, help="Number of training epochs"
 )
-parser.add_argument("--patience", type=int, default=20, help="Early stopping patience")
+parser.add_argument("--patience", type=int, default=5, help="Early stopping patience")
 parser.add_argument(
     "--preprocessed_dir",
     type=str,

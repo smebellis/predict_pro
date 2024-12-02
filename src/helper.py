@@ -29,7 +29,7 @@ def download_dataset():
             logger.info(f"{zip_file} not found. Downloading dataset...")
             if not os.path.exists(data_folder):
                 os.makedirs(data_folder)
-
+            
             # Download dataset using Kaggle API
             subprocess.run(
                 [
@@ -113,8 +113,8 @@ def parse_arguments():
         default="data/porto_districts.json",
         help="Path to the districts JSON file.",
     )
-    parser.add_argument("--save", help="Path to save the file")
-
+    parser.add_argument("--save", default="processed_data/clustered_data.csv", help="Path to save the file")
+    parser.add_argument("--input_processed", default="processed_data/taxi_data_processed.csv", help="Path to save the file")
     # Optional arguments
     parser.add_argument(
         "--missing_data_column",

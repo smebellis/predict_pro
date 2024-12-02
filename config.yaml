@@ -2,9 +2,11 @@ app_name: Predict Pro
 version: 0.1.0
 
 paths:
+  zip_file: "data/taxi-trajectory.zip"
+  data_folder: "data"
   input: /data/train.csv
   output: /processed_data/taxi_data_processed.csv
-  districts_path: /src/utils/porto_districts.json
+  districts_path: data/porto_districts.json
   processed_data: /processed_data
 
 parameters:

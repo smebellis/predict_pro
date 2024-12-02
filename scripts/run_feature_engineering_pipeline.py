@@ -19,8 +19,7 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.FeatureEngineering import (
     FeatureEngineeringPipeline,
-    EnhancedFeatureEngineeringPipeline,
-    FeatureEngineeringPipelineWithEmbeddings,
+    
 )
 from src.logger import get_logger
 from src.helper import read_csv_with_progress
@@ -36,7 +35,7 @@ os.makedirs(PICKLE_DIR, exist_ok=True)
 BATCH_SIZE = 1000
 # Paths
 input_path = (
-    "/home/smebellis/ece5831_final_project/processed_data/clustered_dataset.csv"
+    "processed_data/clustered_dataset.csv"
 )
 output_path = (
     "/home/smebellis/ece5831_final_project/processed_data/post_feature_engineered.csv"

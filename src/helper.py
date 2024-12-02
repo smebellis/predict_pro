@@ -13,11 +13,42 @@ from sklearn.cluster import KMeans
 from tqdm import tqdm
 import seaborn as sns
 import os
+import subprocess
+import zipfile
 
 from src.logger import get_logger
 
 logger = get_logger(__name__)
 
+def download_dataset():
+    # Check if the data/taxi-trajectory.zip file exists
+        zip_file = "data/taxi-trajectory.zip"
+        data_folder = "data"
+
+        if not os.path.exists(zip_file):
+            logger.info(f"{zip_file} not found. Downloading dataset...")
+            if not os.path.exists(data_folder):
+                os.makedirs(data_folder)
+
+            # Download dataset using Kaggle API
+            subprocess.run(
+                [
+                    "kaggle",
+                    "datasets",
+                    "download",
+                    "crailtap/taxi-trajectory",
+                    "-p",
+                    data_folder,
+                ],
+                check=True,
+            )
+
+            # Unzip the downloaded file
+            with zipfile.ZipFile(zip_file, "r") as zip_ref:
+                zip_ref.extractall(data_folder)
+            logger.info(f"Dataset downloaded and extracted to {data_folder}.")
+        else:
+            logger.info(f"{zip_file} already exists.")
 
 def load_config(config_path: str = "config.yaml") -> dict:
     """
@@ -73,15 +104,16 @@ def parse_arguments():
     parser.add_argument(
         "--input",
         "-i",
-        default="/home/smebellis/ece5831_final_project/data/train.csv",
+        default="data/train.csv",
         help="Path to the input CSV file.",
     )
-    parser.add_argument("--output", "-o", help="Path to save the processed CSV file.")
+    parser.add_argument("--output", "-o", default="processed_data/taxi_data_processed.csv", help="Path to save the processed CSV file.")
     parser.add_argument(
         "--districts_path",
-        default="/home/smebellis/ece5831_final_project/data/porto_districts.json",
+        default="data/porto_districts.json",
         help="Path to the districts JSON file.",
     )
+    parser.add_argument("--save", help="Path to save the file")
 
     # Optional arguments
     parser.add_argument(
@@ -146,7 +178,7 @@ def parse_arguments():
         help="Decides if the pipeline should be ran",
     )
 
-    parser.add_argument("--save", type=str, help="Path to save the file")
+    
 
     return parser.parse_args()
 

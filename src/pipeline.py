@@ -30,37 +30,10 @@ def preprocessing_pipeline(
     travel_time_column: str = "TRAVEL_TIME",
     drop_na: bool = True,
 ) -> pd.DataFrame:
-
+    
     # Load your data
     try:
-        # Check if the data/taxi-trajectory.zip file exists
-        zip_file = "data/taxi-trajectory.zip"
-        data_folder = "data"
-
-        if not os.path.exists(zip_file):
-            logger.info(f"{zip_file} not found. Downloading dataset...")
-            if not os.path.exists(data_folder):
-                os.makedirs(data_folder)
-
-            # Download dataset using Kaggle API
-            subprocess.run(
-                [
-                    "kaggle",
-                    "datasets",
-                    "download",
-                    "crailtap/taxi-trajectory",
-                    "-p",
-                    data_folder,
-                ],
-                check=True,
-            )
-
-            # Unzip the downloaded file
-            with zipfile.ZipFile(zip_file, "r") as zip_ref:
-                zip_ref.extractall(data_folder)
-            logger.info(f"Dataset downloaded and extracted to {data_folder}.")
-        else:
-            logger.info(f"{zip_file} already exists.")
+        
         logger.info(f"Loading data from {input_file}")
         df = read_csv_with_progress(input_file)
 

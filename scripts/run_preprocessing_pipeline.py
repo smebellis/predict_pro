@@ -7,7 +7,7 @@ import numpy as np
 sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), "..")))
 
 from src.districts import load_districts
-from src.helper import parse_arguments
+from src.helper import parse_arguments, load_config, download_dataset
 from src.pipeline import preprocessing_pipeline
 from src.logger import get_logger
 from src.Preprocessing import Preprocessing
@@ -29,9 +29,22 @@ def main():
     logger.info("Loading district boundary data...")
     try:
         porto_districts = load_districts(args.districts_path)
+        
     except porto_districts.DistrictLoadError:
         sys.exit(1)
 
+    download_dataset()
+    
+    try:
+        directory_path, file = os.path.split(args.output)
+        os.makedirs(directory_path, exist_ok=True)
+        logger.info(f"Directory created at {directory_path}")
+    except PermissionError as e:
+        logger.error(f"Permission denied: Could not create directory at {directory_path}. Error: {e}")
+        raise
+    except FileExistsError as e:
+        logger.error(f"A file already exists at {directory_path}. Error: {e}")
+        raise
     try:
         preprocessor = Preprocessing(districts=porto_districts)
 
@@ -44,6 +57,7 @@ def main():
         sys.exit(1)
 
     logger.info("Preprocessing Pipeline Completed")
+
 
 
 if __name__ == "__main__":

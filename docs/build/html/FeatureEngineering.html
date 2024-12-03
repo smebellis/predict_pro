@@ -1,0 +1,381 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Feature Engineering &mdash; ECE5831 Final Project  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Districts" href="districts.html" />
+    <link rel="prev" title="Preprocessing" href="Preprocessing.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ECE5831 Final Project
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Preprocessing.html">Preprocessing</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Feature Engineering</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline"><code class="docutils literal notranslate"><span class="pre">EnhancedFeatureEngineeringPipeline</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline.convert_route_to_image"><code class="docutils literal notranslate"><span class="pre">EnhancedFeatureEngineeringPipeline.convert_route_to_image()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline.fit"><code class="docutils literal notranslate"><span class="pre">EnhancedFeatureEngineeringPipeline.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline.fit_transform"><code class="docutils literal notranslate"><span class="pre">EnhancedFeatureEngineeringPipeline.fit_transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline.transform"><code class="docutils literal notranslate"><span class="pre">EnhancedFeatureEngineeringPipeline.transform()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipeline"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipeline</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipeline.convert_route_to_image"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipeline.convert_route_to_image()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipeline.convert_route_to_image_optimized"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipeline.convert_route_to_image_optimized()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipeline.fit"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipeline.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipeline.fit_transform"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipeline.fit_transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipeline.transform"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipeline.transform()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipelineWithEmbeddings</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.convert_route_to_image"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipelineWithEmbeddings.convert_route_to_image()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.fit"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipelineWithEmbeddings.fit()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.fit_transform"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipelineWithEmbeddings.fit_transform()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.transform"><code class="docutils literal notranslate"><span class="pre">FeatureEngineeringPipelineWithEmbeddings.transform()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="districts.html">Districts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cluster_districts.html">Cluster Districts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="helper.html">Helper Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logger.html">Logger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train.html">train Module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ECE5831 Final Project</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Feature Engineering</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/FeatureEngineering.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-FeatureEngineering">
+<span id="feature-engineering"></span><span id="module-featureengineering"></span><h1>Feature Engineering<a class="headerlink" href="#module-FeatureEngineering" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="FeatureEngineering.EnhancedFeatureEngineeringPipeline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">FeatureEngineering.</span></span><span class="sig-name descname"><span class="pre">EnhancedFeatureEngineeringPipeline</span></span><a class="headerlink" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A pipeline for feature engineering that includes encoding categorical variables,
+scaling numerical features, and converting polyline data to image representations.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><p>scaler (MinMaxScaler): Scaler for numerical features.
+numerical_imputer (SimpleImputer): Imputer for numerical features.
+categorical_imputer (SimpleImputer): Imputer for categorical features.
+numerical_features (list): List of numerical feature names.
+categorical_features (list): List of categorical feature names.
+encoders (dict): Dictionary of OneHotEncoders for categorical features.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.EnhancedFeatureEngineeringPipeline.convert_route_to_image">
+<span class="sig-name descname"><span class="pre">convert_route_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polyline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline.convert_route_to_image" title="Link to this definition"></a></dt>
+<dd><p>Converts a polyline to a grayscale image representation.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>polyline (list): A list of [latitude, longitude] points.</p>
+</dd>
+<dt>Returns:</dt><dd><p>np.ndarray: A 32x32 grayscale image representing the route.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.EnhancedFeatureEngineeringPipeline.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline.fit" title="Link to this definition"></a></dt>
+<dd><p>Fits the encoders and scaler on the provided training data.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dataframe (pd.DataFrame): The training data containing features to fit.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.EnhancedFeatureEngineeringPipeline.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline.fit_transform" title="Link to this definition"></a></dt>
+<dd><p>Fits the pipeline on the data and then transforms it.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dataframe (pd.DataFrame): The data to fit and transform.</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>tuple: A tuple containing:</dt><dd><ul class="simple">
+<li><p>route_images_tensor (torch.Tensor): Tensor of route images.</p></li>
+<li><p>additional_features_tensor (torch.Tensor): Tensor of additional engineered features.</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.EnhancedFeatureEngineeringPipeline.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#FeatureEngineering.EnhancedFeatureEngineeringPipeline.transform" title="Link to this definition"></a></dt>
+<dd><p>Transforms the data by encoding categorical features, scaling numerical features,
+and converting polyline data to image representations.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dataframe (pd.DataFrame): The data to transform.</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>tuple: A tuple containing:</dt><dd><ul class="simple">
+<li><p>route_images_tensor (torch.Tensor): Tensor of route images.</p></li>
+<li><p>additional_features_tensor (torch.Tensor): Tensor of additional engineered features.</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipeline">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">FeatureEngineering.</span></span><span class="sig-name descname"><span class="pre">FeatureEngineeringPipeline</span></span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipeline" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A pipeline for feature engineering that includes encoding categorical variables,
+scaling numerical features, and converting polyline data to image representations.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><p>scaler (MinMaxScaler): Scaler for numerical features.
+numerical_imputer (SimpleImputer): Imputer for numerical features.
+categorical_imputer (SimpleImputer): Imputer for categorical features.
+numerical_features (list): List of numerical feature names.
+categorical_features (list): List of categorical feature names.
+weekday_encoder (OneHotEncoder): Encoder for the ‘WEEKDAY’ feature.
+month_encoder (OneHotEncoder): Encoder for the ‘MONTH’ feature.
+cluster_encoder (OneHotEncoder): Encoder for ‘DISTRICT_CLUSTER’ and ‘TIME_CLUSTER’ features.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipeline.convert_route_to_image">
+<span class="sig-name descname"><span class="pre">convert_route_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polyline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipeline.convert_route_to_image" title="Link to this definition"></a></dt>
+<dd><p>Converts a polyline to a grayscale image representation.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>polyline (list): A list of [latitude, longitude] points.</p>
+</dd>
+<dt>Returns:</dt><dd><p>np.ndarray: A 32x32 grayscale image representing the route.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipeline.convert_route_to_image_optimized">
+<span class="sig-name descname"><span class="pre">convert_route_to_image_optimized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polyline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipeline.convert_route_to_image_optimized" title="Link to this definition"></a></dt>
+<dd><p>Optimized version of the function to convert a polyline to a grayscale image representation.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>polyline (list): A list of [latitude, longitude] points.</p>
+</dd>
+<dt>Returns:</dt><dd><p>np.ndarray: A 32x32 grayscale image representing the route.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipeline.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipeline.fit" title="Link to this definition"></a></dt>
+<dd><p>Fits the encoders and scaler on the provided training data.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dataframe (pd.DataFrame): The training data containing features to fit.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipeline.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipeline.fit_transform" title="Link to this definition"></a></dt>
+<dd><p>Fits the pipeline on the data and then transforms it.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dataframe (pd.DataFrame): The data to fit and transform.</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>tuple: A tuple containing:</dt><dd><ul class="simple">
+<li><p>route_images_tensor (torch.Tensor): Tensor of route images.</p></li>
+<li><p>additional_features_tensor (torch.Tensor): Tensor of additional engineered features.</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipeline.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipeline.transform" title="Link to this definition"></a></dt>
+<dd><p>Transforms the data by encoding categorical features, scaling numerical features,
+and converting polyline data to image representations.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dataframe (pd.DataFrame): The data to transform.</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>tuple: A tuple containing:</dt><dd><ul class="simple">
+<li><p>route_images_tensor (torch.Tensor): Tensor of route images.</p></li>
+<li><p>additional_features_tensor (torch.Tensor): Tensor of additional engineered features.</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">FeatureEngineering.</span></span><span class="sig-name descname"><span class="pre">FeatureEngineeringPipelineWithEmbeddings</span></span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<p>A pipeline for feature engineering that includes encoding categorical variables
+using embeddings, scaling numerical features, and converting polyline data to image representations.</p>
+<dl class="simple">
+<dt>Attributes:</dt><dd><p>scaler (MinMaxScaler): Scaler for numerical features.
+numerical_imputer (SimpleImputer): Imputer for numerical features.
+categorical_imputer (SimpleImputer): Imputer for categorical features.
+numerical_features (list): List of numerical feature names.
+categorical_features (list): List of categorical feature names.
+embeddings (dict): Dictionary of Embedding layers for categorical features.</p>
+</dd>
+</dl>
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.convert_route_to_image">
+<span class="sig-name descname"><span class="pre">convert_route_to_image</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">polyline</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">ndarray</span></span></span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.convert_route_to_image" title="Link to this definition"></a></dt>
+<dd><p>Converts a polyline to a grayscale image representation.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>polyline (list): A list of [latitude, longitude] points.</p>
+</dd>
+<dt>Returns:</dt><dd><p>np.ndarray: A 32x32 grayscale image representing the route.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.fit">
+<span class="sig-name descname"><span class="pre">fit</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.fit" title="Link to this definition"></a></dt>
+<dd><p>Fits the scaler on the provided training data.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dataframe (pd.DataFrame): The training data containing features to fit.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.fit_transform">
+<span class="sig-name descname"><span class="pre">fit_transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.fit_transform" title="Link to this definition"></a></dt>
+<dd><p>Fits the pipeline on the data and then transforms it.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dataframe (pd.DataFrame): The data to fit and transform.</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>tuple: A tuple containing:</dt><dd><ul class="simple">
+<li><p>route_images_tensor (torch.Tensor): Tensor of route images.</p></li>
+<li><p>additional_features_tensor (torch.Tensor): Tensor of additional engineered features.</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.transform">
+<span class="sig-name descname"><span class="pre">transform</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">dataframe</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#FeatureEngineering.FeatureEngineeringPipelineWithEmbeddings.transform" title="Link to this definition"></a></dt>
+<dd><p>Transforms the data by encoding categorical features using embeddings, scaling numerical features,
+and converting polyline data to image representations.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>dataframe (pd.DataFrame): The data to transform.</p>
+</dd>
+<dt>Returns:</dt><dd><dl class="simple">
+<dt>tuple: A tuple containing:</dt><dd><ul class="simple">
+<li><p>route_images_tensor (torch.Tensor): Tensor of route images.</p></li>
+<li><p>additional_features_tensor (torch.Tensor): Tensor of additional engineered features.</p></li>
+</ul>
+</dd>
+</dl>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="Preprocessing.html" class="btn btn-neutral float-left" title="Preprocessing" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="districts.html" class="btn btn-neutral float-right" title="Districts" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024 Ryan Ellis, Ahmad Alamery.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

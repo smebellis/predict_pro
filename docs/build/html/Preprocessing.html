@@ -1,0 +1,544 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Preprocessing &mdash; ECE5831 Final Project  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Feature Engineering" href="FeatureEngineering.html" />
+    <link rel="prev" title="Project Documentation" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ECE5831 Final Project
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Preprocessing</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Preprocessing.Preprocessing"><code class="docutils literal notranslate"><span class="pre">Preprocessing</span></code></a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.assign_district"><code class="docutils literal notranslate"><span class="pre">Preprocessing.assign_district()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.assign_district_vectorized"><code class="docutils literal notranslate"><span class="pre">Preprocessing.assign_district_vectorized()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.assign_districts"><code class="docutils literal notranslate"><span class="pre">Preprocessing.assign_districts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.calculate_avg_speed"><code class="docutils literal notranslate"><span class="pre">Preprocessing.calculate_avg_speed()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.calculate_end_time"><code class="docutils literal notranslate"><span class="pre">Preprocessing.calculate_end_time()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.calculate_travel_time"><code class="docutils literal notranslate"><span class="pre">Preprocessing.calculate_travel_time()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.calculate_trip_distance"><code class="docutils literal notranslate"><span class="pre">Preprocessing.calculate_trip_distance()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.convert_coordinates"><code class="docutils literal notranslate"><span class="pre">Preprocessing.convert_coordinates()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.convert_timestamp"><code class="docutils literal notranslate"><span class="pre">Preprocessing.convert_timestamp()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.drop_columns"><code class="docutils literal notranslate"><span class="pre">Preprocessing.drop_columns()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.drop_nan"><code class="docutils literal notranslate"><span class="pre">Preprocessing.drop_nan()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.extract_coordinates"><code class="docutils literal notranslate"><span class="pre">Preprocessing.extract_coordinates()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.haversine"><code class="docutils literal notranslate"><span class="pre">Preprocessing.haversine()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.load_districts"><code class="docutils literal notranslate"><span class="pre">Preprocessing.load_districts()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.parse_and_correct_polyline_coordinates"><code class="docutils literal notranslate"><span class="pre">Preprocessing.parse_and_correct_polyline_coordinates()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.remove_missing_gps"><code class="docutils literal notranslate"><span class="pre">Preprocessing.remove_missing_gps()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.safe_convert_string_to_list"><code class="docutils literal notranslate"><span class="pre">Preprocessing.safe_convert_string_to_list()</span></code></a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Preprocessing.Preprocessing.separate_timestamp"><code class="docutils literal notranslate"><span class="pre">Preprocessing.separate_timestamp()</span></code></a></li>
+</ul>
+</li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="FeatureEngineering.html">Feature Engineering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="districts.html">Districts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cluster_districts.html">Cluster Districts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="helper.html">Helper Functions</a></li>
+<li class="toctree-l1"><a class="reference internal" href="logger.html">Logger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train.html">train Module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ECE5831 Final Project</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Preprocessing</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/Preprocessing.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-Preprocessing">
+<span id="preprocessing"></span><span id="module-preprocessing"></span><h1>Preprocessing<a class="headerlink" href="#module-Preprocessing" title="Link to this heading"></a></h1>
+<dl class="py class">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing">
+<em class="property"><span class="pre">class</span><span class="w"> </span></em><span class="sig-prename descclassname"><span class="pre">Preprocessing.</span></span><span class="sig-name descname"><span class="pre">Preprocessing</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">districts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Preprocessing.Preprocessing" title="Link to this definition"></a></dt>
+<dd><p>Bases: <code class="xref py py-class docutils literal notranslate"><span class="pre">object</span></code></p>
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.assign_district">
+<span class="sig-name descname"><span class="pre">assign_district</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">row</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Series</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.assign_district" title="Link to this definition"></a></dt>
+<dd><p>Assigns a district to a given point.</p>
+<p>Parameters:
+- row (pd.Series): A row containing ‘Long’ and ‘Lat’ for the point.</p>
+<p>Returns:
+- str: The name of the closest district containing the point or “no district” if none found.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.assign_district_vectorized">
+<span class="sig-name descname"><span class="pre">assign_district_vectorized</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">taxi_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.assign_district_vectorized" title="Link to this definition"></a></dt>
+<dd><p>Assigns district names to taxi data based on their start coordinates using vectorized operations.</p>
+<p>This method iterates over the districts dataframe and assigns the corresponding district name
+to each taxi trip based on the start longitude and latitude. If the districts data is not loaded,
+it assigns “no district” to all taxi trips.</p>
+<section id="parameters">
+<h2>Parameters:<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>taxi_df<span class="classifier">pd.DataFrame</span></dt><dd><p>DataFrame containing taxi trip data with columns ‘START_LONG’, ‘START_LAT’, and ‘DISTRICT_NAME’.</p>
+</dd>
+</dl>
+</section>
+<section id="returns">
+<h2>Returns:<a class="headerlink" href="#returns" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>Updated DataFrame with the ‘DISTRICT_NAME’ column assigned based on the start coordinates.</p>
+</dd>
+</dl>
+</section>
+<section id="raises">
+<h2>Raises:<a class="headerlink" href="#raises" title="Link to this heading"></a></h2>
+<p>None</p>
+</section>
+<section id="notes">
+<h2>Notes:<a class="headerlink" href="#notes" title="Link to this heading"></a></h2>
+<ul class="simple">
+<li><p>The method assumes that the ‘districts_df’ attribute is a DataFrame with columns ‘left_long’,</p></li>
+</ul>
+<p>‘right_long’, ‘lower_lat’, ‘upper_lat’, and ‘DISTRICT_NAME’.
+- The ‘DISTRICT_NAME’ column in the taxi_df should initially be set to “no district” for proper assignment.
+- Logging is used to provide information and debugging details about the assignment process.</p>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.assign_districts">
+<span class="sig-name descname"><span class="pre">assign_districts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">taxi_df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">method</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'vectorized'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">sample_size</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">1000</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">use_sample</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">False</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.assign_districts" title="Link to this definition"></a></dt>
+<dd><p>Assign district names to taxi data points using the specified method.</p>
+<section id="id1">
+<h2>Parameters:<a class="headerlink" href="#id1" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>taxi_df<span class="classifier">pd.DataFrame</span></dt><dd><p>DataFrame containing taxi trajectory data.</p>
+</dd>
+<dt>method<span class="classifier">str, optional</span></dt><dd><p>Method to use (‘vectorized’ or ‘row-wise’). Defaults to ‘vectorized’.</p>
+</dd>
+<dt>sample_size<span class="classifier">int, optional</span></dt><dd><p>Number of samples to process for testing. Defaults to 1000.</p>
+</dd>
+<dt>use_sample<span class="classifier">bool, optional</span></dt><dd><p>Whether to process a sample or the entire dataset. Defaults to False.</p>
+</dd>
+</dl>
+</section>
+<section id="id2">
+<h2>Returns:<a class="headerlink" href="#id2" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>Taxi DataFrame with assigned district names.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.calculate_avg_speed">
+<span class="sig-name descname"><span class="pre">calculate_avg_speed</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'TRIP_DISTANCE'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">travel_time_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'TRAVEL_TIME'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">speed_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'AVG_SPEED'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'km/h'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.calculate_avg_speed" title="Link to this definition"></a></dt>
+<dd><p>Calculate the average speed for each trip based on distance and travel time.</p>
+<section id="id3">
+<h2>Parameters:<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The input DataFrame.</p>
+</dd>
+<dt>distance_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column that contains trip distance (default is “TRIP_DISTANCE”).</p>
+</dd>
+<dt>travel_time_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column that contains travel time data (default is “TRAVEL_TIME”).</p>
+</dd>
+<dt>speed_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column to store the calculated average speed (default is “AVG_SPEED”).</p>
+</dd>
+<dt>unit<span class="classifier">str, optional</span></dt><dd><p>Unit for average speed calculation (“km/h” or “miles/h”). Defaults to “km/h”.</p>
+</dd>
+</dl>
+</section>
+<section id="id4">
+<h2>Returns:<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>DataFrame with a new column containing the average speed of each trip.</p>
+</dd>
+</dl>
+</section>
+<section id="id5">
+<h2>Raises:<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If the specified distance or travel time columns do not exist or contain invalid data.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.calculate_end_time">
+<span class="sig-name descname"><span class="pre">calculate_end_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">start_time_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'TIMESTAMP'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">travel_time_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'TRAVEL_TIME'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.calculate_end_time" title="Link to this definition"></a></dt>
+<dd><p>Calculate end time by adding travel time to the start time.</p>
+<section id="id6">
+<h2>Parameters:<a class="headerlink" href="#id6" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The input DataFrame.</p>
+</dd>
+<dt>start_time_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column that contains start time data (default is “TIMESTAMP”).</p>
+</dd>
+<dt>travel_time_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column that contains travel time data (default is “TRAVEL_TIME”).</p>
+</dd>
+</dl>
+</section>
+<section id="id7">
+<h2>Returns:<a class="headerlink" href="#id7" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>The DataFrame with a new column ‘END_TIME’.</p>
+</dd>
+</dl>
+</section>
+<section id="id8">
+<h2>Raises:<a class="headerlink" href="#id8" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If the specified start time or travel time columns do not exist or contain invalid data.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.calculate_travel_time">
+<span class="sig-name descname"><span class="pre">calculate_travel_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyline_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'POLYLINE'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.calculate_travel_time" title="Link to this definition"></a></dt>
+<dd><p>Calculate the travel time based on the polyline data where each point represents 15 seconds.</p>
+<section id="id9">
+<h2>Parameters:<a class="headerlink" href="#id9" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The input DataFrame with a ‘POLYLINE’ column.</p>
+</dd>
+<dt>polyline_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column containing the polyline data.</p>
+</dd>
+</dl>
+</section>
+<section id="id10">
+<h2>Returns:<a class="headerlink" href="#id10" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>DataFrame with an added ‘TRAVEL_TIME’ column containing the travel time in seconds.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.calculate_trip_distance">
+<span class="sig-name descname"><span class="pre">calculate_trip_distance</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyline_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'POLYLINE'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">distance_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'TRIP_DISTANCE'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'km'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.calculate_trip_distance" title="Link to this definition"></a></dt>
+<dd><p>Calculate the total distance of each trip based on the polyline data.</p>
+<section id="id11">
+<h2>Parameters:<a class="headerlink" href="#id11" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The input DataFrame with a ‘POLYLINE’ column.</p>
+</dd>
+<dt>polyline_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column containing the polyline data (default is “POLYLINE”).</p>
+</dd>
+<dt>distance_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column to store the calculated trip distance (default is “TRIP_DISTANCE”).</p>
+</dd>
+<dt>unit<span class="classifier">str, optional</span></dt><dd><p>Unit for distance calculation (“km” or “miles”). Defaults to “km”.</p>
+</dd>
+</dl>
+</section>
+<section id="id12">
+<h2>Returns:<a class="headerlink" href="#id12" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>DataFrame with a new column containing the total distance of each trip.</p>
+</dd>
+</dl>
+</section>
+<section id="id13">
+<h2>Raises:<a class="headerlink" href="#id13" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If the specified polyline column does not exist or contain invalid data.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.convert_coordinates">
+<span class="sig-name descname"><span class="pre">convert_coordinates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">string</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#Preprocessing.Preprocessing.convert_coordinates" title="Link to this definition"></a></dt>
+<dd><p>Loads list of coordinates from given string and swap out longitudes &amp; latitudes.
+We do the swapping because the standard is to have latitude values first, but
+the original datasets provided in the competition have it backwards.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.convert_timestamp">
+<span class="sig-name descname"><span class="pre">convert_timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'TIMESTAMP'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.convert_timestamp" title="Link to this definition"></a></dt>
+<dd><p>Converts a UNIX timestamp into a windows timestamp in the year-month-day hour minute-second format</p>
+<section id="id14">
+<h2>Parameters:<a class="headerlink" href="#id14" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The input DataFrame.</p>
+</dd>
+<dt>data_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column that indicates the timestamp data (default is “TIMESTAMP”).</p>
+</dd>
+</dl>
+</section>
+<section id="id15">
+<h2>Returns:<a class="headerlink" href="#id15" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>The DataFrame with the converted timestamp in a new column named ‘CONVERTED_TIMESTAMP’.</p>
+</dd>
+</dl>
+</section>
+<section id="id16">
+<h2>Raises:<a class="headerlink" href="#id16" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If the specified timestamp column does not exist in the DataFrame.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.drop_columns">
+<span class="sig-name descname"><span class="pre">drop_columns</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">columns_to_drop</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.drop_columns" title="Link to this definition"></a></dt>
+<dd><p>Drops the specified columns from the DataFrame.</p>
+<section id="id17">
+<h2>Parameters:<a class="headerlink" href="#id17" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The input DataFrame from which columns will be dropped.</p>
+</dd>
+<dt>columns_to_drop<span class="classifier">list, optional</span></dt><dd><p>A list of column names to drop. If not provided, defaults to [“ORIGIN_CALL”, “ORIGIN_STAND”].</p>
+</dd>
+</dl>
+</section>
+<section id="id18">
+<h2>Returns:<a class="headerlink" href="#id18" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>A new DataFrame with the specified columns removed.</p>
+</dd>
+</dl>
+</section>
+<section id="id19">
+<h2>Raises:<a class="headerlink" href="#id19" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If the input DataFrame is empty.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.drop_nan">
+<span class="sig-name descname"><span class="pre">drop_nan</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.drop_nan" title="Link to this definition"></a></dt>
+<dd><p>Cleans the input DataFrame by handling missing data.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df (pd.DataFrame): The DataFrame to clean.</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: The cleaned DataFrame.</p>
+</dd>
+<dt>Raises:</dt><dd><p>TypeError: If the input is not a pandas DataFrame.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.extract_coordinates">
+<span class="sig-name descname"><span class="pre">extract_coordinates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyline_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'POLYLINE'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.extract_coordinates" title="Link to this definition"></a></dt>
+<dd><p>Extract some features from the original columns in the given dataset.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.haversine">
+<em class="property"><span class="pre">static</span><span class="w"> </span></em><span class="sig-name descname"><span class="pre">haversine</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">lon1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat1</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lon2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lat2</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">unit</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'km'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">float</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">ndarray</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.haversine" title="Link to this definition"></a></dt>
+<dd><p>Calculate the great-circle distance between one point and multiple points on the Earth.</p>
+<p>Parameters:
+- lon1 (float): Longitude of the first point in decimal degrees.
+- lat1 (float): Latitude of the first point in decimal degrees.
+- lon2 (float or np.ndarray): Longitude(s) of the second point(s) in decimal degrees.
+- lat2 (float or np.ndarray): Latitude(s) of the second point(s) in decimal degrees.
+- unit (str, optional): Unit of distance (‘km’, ‘miles’, ‘nmi’). Defaults to ‘km’.</p>
+<p>Returns:
+- float or np.ndarray: Distance(s) between the first point and second point(s) in the specified unit.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.load_districts">
+<span class="sig-name descname"><span class="pre">load_districts</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">districts</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.load_districts" title="Link to this definition"></a></dt>
+<dd><p>Convert a districts dictionary to a pandas DataFrame with calculated center coordinates.</p>
+<p>Parameters:
+- districts (dict): Dictionary containing district boundary information.</p>
+<p>Returns:
+- pd.DataFrame: Processed DataFrame with district boundaries and center coordinates.</p>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.parse_and_correct_polyline_coordinates">
+<span class="sig-name descname"><span class="pre">parse_and_correct_polyline_coordinates</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyline_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'POLYLINE'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.parse_and_correct_polyline_coordinates" title="Link to this definition"></a></dt>
+<dd><p>Parses and corrects coordinates in the specified column of the DataFrame.
+Converts string representations of lists into actual lists and swaps
+latitude and longitude values as per standard convention.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df (pd.DataFrame): The input DataFrame.
+polyline_column (str): The column containing string representations of lists.</p>
+</dd>
+<dt>Returns:</dt><dd><p>Optional[pd.DataFrame]: The DataFrame with the specified column converted to lists
+and corrected coordinates.</p>
+</dd>
+<dt>Raises:</dt><dd><p>ValueError: If the specified column does not exist.
+IndexError: If the DataFrame is empty.
+ValueError: If a cell in the specified column cannot be parsed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.remove_missing_gps">
+<span class="sig-name descname"><span class="pre">remove_missing_gps</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing_data_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'MISSING_DATA'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">missing_flag</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">bool</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.remove_missing_gps" title="Link to this definition"></a></dt>
+<dd><p>Remove rows from the DataFrame where the specified missing data column has the missing flag.</p>
+<section id="id20">
+<h2>Parameters:<a class="headerlink" href="#id20" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The input DataFrame.</p>
+</dd>
+<dt>missing_data_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column that indicates missing data (default is “MISSING_DATA”).</p>
+</dd>
+<dt>missing_flag<span class="classifier">bool, optional</span></dt><dd><p>The flag value that indicates missing data (default is True).</p>
+</dd>
+</dl>
+</section>
+<section id="id21">
+<h2>Returns:<a class="headerlink" href="#id21" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>The DataFrame with rows containing missing data removed.</p>
+</dd>
+</dl>
+</section>
+<section id="id22">
+<h2>Raises:<a class="headerlink" href="#id22" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If the specified missing data column does not exist in the DataFrame.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.safe_convert_string_to_list">
+<span class="sig-name descname"><span class="pre">safe_convert_string_to_list</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">polyline_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'POLYLINE'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">list</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.safe_convert_string_to_list" title="Link to this definition"></a></dt>
+<dd><p>Converts string representations of lists in the specified column to actual lists.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>df (pd.DataFrame): The input DataFrame.
+polyline_column (str): The column containing string representations of lists.</p>
+</dd>
+<dt>Returns:</dt><dd><p>Optional[pd.DataFrame]: The DataFrame with the specified column converted to lists.</p>
+</dd>
+<dt>Raises:</dt><dd><p>ValueError: If the specified column does not exist.
+IndexError: If the DataFrame is empty.
+ValueError: If a cell in the specified column cannot be parsed.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="Preprocessing.Preprocessing.separate_timestamp">
+<span class="sig-name descname"><span class="pre">separate_timestamp</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">timestamp_column</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'TIMESTAMP'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#Preprocessing.Preprocessing.separate_timestamp" title="Link to this definition"></a></dt>
+<dd><p>Calculate the weekday from the timestamp column and add it as a new column.</p>
+<section id="id23">
+<h2>Parameters:<a class="headerlink" href="#id23" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The input DataFrame with a datetime timestamp column.</p>
+</dd>
+<dt>timestamp_column<span class="classifier">str, optional</span></dt><dd><p>The name of the column that contains datetime timestamp data (default is “TIMESTAMP”).</p>
+</dd>
+</dl>
+</section>
+<section id="id24">
+<h2>Returns:<a class="headerlink" href="#id24" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>pd.DataFrame</dt><dd><p>The DataFrame with a new column named ‘WEEKDAY’.</p>
+</dd>
+</dl>
+</section>
+<section id="id25">
+<h2>Raises:<a class="headerlink" href="#id25" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>ValueError</dt><dd><p>If the specified timestamp column does not exist in the DataFrame.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="index.html" class="btn btn-neutral float-left" title="Project Documentation" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="FeatureEngineering.html" class="btn btn-neutral float-right" title="Feature Engineering" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024 Ryan Ellis, Ahmad Alamery.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

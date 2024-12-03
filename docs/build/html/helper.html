@@ -1,0 +1,275 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" data-content_root="./">
+<head>
+  <meta charset="utf-8" /><meta name="viewport" content="width=device-width, initial-scale=1" />
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Helper Functions &mdash; ECE5831 Final Project  documentation</title>
+      <link rel="stylesheet" type="text/css" href="_static/pygments.css?v=80d5e7a1" />
+      <link rel="stylesheet" type="text/css" href="_static/css/theme.css?v=e59714d7" />
+
+  
+      <script src="_static/jquery.js?v=5d32c60e"></script>
+      <script src="_static/_sphinx_javascript_frameworks_compat.js?v=2cd50e6c"></script>
+      <script src="_static/documentation_options.js?v=5929fcd5"></script>
+      <script src="_static/doctools.js?v=9bcbadda"></script>
+      <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+    <script src="_static/js/theme.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Logger" href="logger.html" />
+    <link rel="prev" title="Cluster Districts" href="cluster_districts.html" /> 
+</head>
+
+<body class="wy-body-for-nav"> 
+  <div class="wy-grid-for-nav">
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+
+          
+          
+          <a href="index.html" class="icon icon-home">
+            ECE5831 Final Project
+          </a>
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" aria-label="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+        </div><div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="Navigation menu">
+              <p class="caption" role="heading"><span class="caption-text">Contents:</span></p>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="Preprocessing.html">Preprocessing</a></li>
+<li class="toctree-l1"><a class="reference internal" href="FeatureEngineering.html">Feature Engineering</a></li>
+<li class="toctree-l1"><a class="reference internal" href="districts.html">Districts</a></li>
+<li class="toctree-l1"><a class="reference internal" href="cluster_districts.html">Cluster Districts</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Helper Functions</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#helper.categorize_time"><code class="docutils literal notranslate"><span class="pre">categorize_time()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.download_dataset"><code class="docutils literal notranslate"><span class="pre">download_dataset()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.file_load"><code class="docutils literal notranslate"><span class="pre">file_load()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.file_load_large_csv"><code class="docutils literal notranslate"><span class="pre">file_load_large_csv()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.load_config"><code class="docutils literal notranslate"><span class="pre">load_config()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.parse_arguments"><code class="docutils literal notranslate"><span class="pre">parse_arguments()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.plot_metrics"><code class="docutils literal notranslate"><span class="pre">plot_metrics()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.plot_route_images"><code class="docutils literal notranslate"><span class="pre">plot_route_images()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.read_csv_with_progress"><code class="docutils literal notranslate"><span class="pre">read_csv_with_progress()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.save_dataframe_if_not_exists"><code class="docutils literal notranslate"><span class="pre">save_dataframe_if_not_exists()</span></code></a></li>
+<li class="toctree-l2"><a class="reference internal" href="#helper.save_dataframe_overwrite"><code class="docutils literal notranslate"><span class="pre">save_dataframe_overwrite()</span></code></a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="logger.html">Logger</a></li>
+<li class="toctree-l1"><a class="reference internal" href="train.html">train Module</a></li>
+</ul>
+
+        </div>
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap"><nav class="wy-nav-top" aria-label="Mobile navigation menu" >
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">ECE5831 Final Project</a>
+      </nav>
+
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="Page navigation">
+  <ul class="wy-breadcrumbs">
+      <li><a href="index.html" class="icon icon-home" aria-label="Home"></a></li>
+      <li class="breadcrumb-item active">Helper Functions</li>
+      <li class="wy-breadcrumbs-aside">
+            <a href="_sources/helper.rst.txt" rel="nofollow"> View page source</a>
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+             
+  <section id="module-0">
+<span id="helper-functions"></span><span id="module-helper"></span><h1>Helper Functions<a class="headerlink" href="#module-0" title="Link to this heading"></a></h1>
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.categorize_time">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">categorize_time</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">str</span></span></span><a class="headerlink" href="#helper.categorize_time" title="Link to this definition"></a></dt>
+<dd><p>Take an interval and maps it to a time category</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.download_dataset">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">download_dataset</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#helper.download_dataset" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.file_load">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">file_load</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#helper.file_load" title="Link to this definition"></a></dt>
+<dd><p>Loads a file into a pandas DataFrame.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><p>file_path (Union[str, Path]): The path to the file to be loaded.</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: The loaded DataFrame.</p>
+</dd>
+<dt>Raises:</dt><dd><p>FileNotFoundError: If the file does not exist.
+ValueError: If the file format is unsupported.
+pd.errors.ParserError: If there’s an error parsing the file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.file_load_large_csv">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">file_load_large_csv</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunksize</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">100000</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">read_csv_kwargs</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Dict</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">None</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">DataFrame</span></span></span><a class="headerlink" href="#helper.file_load_large_csv" title="Link to this definition"></a></dt>
+<dd><p>Loads a large CSV file into a pandas DataFrame by reading it in chunks.</p>
+<dl class="simple">
+<dt>Parameters:</dt><dd><p>file_path (Union[str, Path]): The path to the CSV file to be loaded.
+chunksize (int, optional): Number of rows per chunk. Default is 100,000.
+<a href="#id1"><span class="problematic" id="id2">**</span></a>read_csv_kwargs: Additional keyword arguments to pass to pandas.read_csv.</p>
+</dd>
+<dt>Returns:</dt><dd><p>pd.DataFrame: The concatenated DataFrame containing all data from the CSV file.</p>
+</dd>
+<dt>Raises:</dt><dd><p>FileNotFoundError: If the specified file does not exist.
+ValueError: If the file is not a CSV or if no data is read from the file.
+pd.errors.ParserError: If there’s an error parsing the CSV file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.load_config">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">load_config</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">config_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'config.yaml'</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">dict</span></span></span><a class="headerlink" href="#helper.load_config" title="Link to this definition"></a></dt>
+<dd><p>Load configuration from a YAML file.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>config_path (str): Path to the YAML configuration file.</p>
+</dd>
+<dt>Returns:</dt><dd><p>dict: Parsed configuration as a dictionary.</p>
+</dd>
+<dt>Raises:</dt><dd><p>FileNotFoundError: If the configuration file does not exist.
+yaml.YAMLError: If there’s an error parsing the YAML file.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.parse_arguments">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">parse_arguments</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#helper.parse_arguments" title="Link to this definition"></a></dt>
+<dd><p>Parses command-line arguments.</p>
+<section id="returns">
+<h2>Returns:<a class="headerlink" href="#returns" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>args<span class="classifier">argparse.Namespace</span></dt><dd><p>Parsed command-line arguments.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.plot_metrics">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">plot_metrics</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">output_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'plots'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#helper.plot_metrics" title="Link to this definition"></a></dt>
+<dd></dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.plot_route_images">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">plot_route_images</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">route_images</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Tensor</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">num_images</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">int</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">5</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#helper.plot_route_images" title="Link to this definition"></a></dt>
+<dd><p>Plots a specified number of route images to verify correctness.</p>
+<dl class="simple">
+<dt>Args:</dt><dd><p>route_images (torch.Tensor): Tensor of images representing routes.
+num_images (int): Number of images to display.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.read_csv_with_progress">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">read_csv_with_progress</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">file_path</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">chunksize</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">100000</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#helper.read_csv_with_progress" title="Link to this definition"></a></dt>
+<dd><p>Reads a CSV file with a progress bar.</p>
+<p>Parameters:
+- file_path: Path to the CSV file.
+- chunksize: Number of rows per chunk.</p>
+<p>Returns:
+- DataFrame containing the concatenated chunks.</p>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.save_dataframe_if_not_exists">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">save_dataframe_if_not_exists</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_format</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'csv'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">bool</span></span></span><a class="headerlink" href="#helper.save_dataframe_if_not_exists" title="Link to this definition"></a></dt>
+<dd><p>Save a DataFrame to a file only if the file does not already exist.</p>
+<section id="parameters">
+<h2>Parameters:<a class="headerlink" href="#parameters" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The DataFrame to save.</p>
+</dd>
+<dt>file_path<span class="classifier">str</span></dt><dd><p>The path to the file where the DataFrame should be saved.</p>
+</dd>
+<dt>file_format<span class="classifier">str, optional</span></dt><dd><p>The format to save the DataFrame in (e.g., ‘csv’, ‘excel’). Default is ‘csv’.</p>
+</dd>
+<dt>kwargs :</dt><dd><p>Additional keyword arguments to pass to the pandas saving method.</p>
+</dd>
+</dl>
+</section>
+<section id="id3">
+<h2>Returns:<a class="headerlink" href="#id3" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>bool</dt><dd><p>True if the file was saved, False if it already exists.</p>
+</dd>
+</dl>
+</section>
+</dd></dl>
+
+<dl class="py function">
+<dt class="sig sig-object py" id="helper.save_dataframe_overwrite">
+<span class="sig-prename descclassname"><span class="pre">helper.</span></span><span class="sig-name descname"><span class="pre">save_dataframe_overwrite</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">df</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">DataFrame</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_path</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">file_format</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">str</span></span><span class="w"> </span><span class="o"><span class="pre">=</span></span><span class="w"> </span><span class="default_value"><span class="pre">'csv'</span></span></em>, <em class="sig-param"><span class="o"><span class="pre">**</span></span><span class="n"><span class="pre">kwargs</span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">None</span></span></span><a class="headerlink" href="#helper.save_dataframe_overwrite" title="Link to this definition"></a></dt>
+<dd><p>Save a DataFrame to a file, overwriting it if it already exists.</p>
+<section id="id4">
+<h2>Parameters:<a class="headerlink" href="#id4" title="Link to this heading"></a></h2>
+<dl class="simple">
+<dt>df<span class="classifier">pd.DataFrame</span></dt><dd><p>The DataFrame to save.</p>
+</dd>
+<dt>file_path<span class="classifier">str</span></dt><dd><p>The path to the file where the DataFrame should be saved.</p>
+</dd>
+<dt>kwargs :</dt><dd><p>Additional keyword arguments to pass to the pandas saving method.</p>
+</dd>
+</dl>
+</section>
+<section id="id5">
+<h2>Returns:<a class="headerlink" href="#id5" title="Link to this heading"></a></h2>
+<p>None</p>
+</section>
+</dd></dl>
+
+</section>
+
+
+           </div>
+          </div>
+          <footer><div class="rst-footer-buttons" role="navigation" aria-label="Footer">
+        <a href="cluster_districts.html" class="btn btn-neutral float-left" title="Cluster Districts" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+        <a href="logger.html" class="btn btn-neutral float-right" title="Logger" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>&#169; Copyright 2024 Ryan Ellis, Ahmad Alamery.</p>
+  </div>
+
+  Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    provided by <a href="https://readthedocs.org">Read the Docs</a>.
+   
+
+</footer>
+        </div>
+      </div>
+    </section>
+  </div>
+  <script>
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script> 
+
+</body>
+</html>

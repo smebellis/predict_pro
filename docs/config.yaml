@@ -1,0 +1,29 @@
+app_name: Predict Pro
+version: 0.1.0
+
+paths:
+  zip_file: "data/taxi-trajectory.zip"
+  data_folder: "data"
+  input: /data/train.csv
+  output: /processed_data/taxi_data_processed.csv
+  districts_path: data/porto_districts.json
+  processed_data: /processed_data
+
+parameters:
+  missing_data_column: "MISSING_DATA"
+  missing_flag: true
+  timestamp_column: "TIMESTAMP"
+  polyline_column: "POLYLINE"
+  polyline_list_column: "POLYLINE_LIST"
+  travel_time_column: "TRAVEL_TIME"
+  drop_na: true
+  sample_size: 1000
+  use_sample: false
+  visualize: true
+  visualization_dir: "visualizations"
+  verbose: true
+
+logs:
+  log_dir: /logs
+  log_file: app.log
+  log_level: INFO

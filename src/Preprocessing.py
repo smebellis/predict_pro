@@ -17,7 +17,7 @@ from tqdm import tqdm
 # Register tqdm with pandas
 tqdm.pandas()
 
-from src.logger import get_logger
+from logger import get_logger
 
 logger = get_logger(__name__)
 
@@ -116,7 +116,7 @@ class Preprocessing:
         Assign district names to taxi data points using the specified method.
 
         Parameters:
-        ----------
+        -----------
         taxi_df : pd.DataFrame
             DataFrame containing taxi trajectory data.
         method : str, optional
@@ -127,7 +127,7 @@ class Preprocessing:
             Whether to process a sample or the entire dataset. Defaults to False.
 
         Returns:
-        -------
+        --------
         pd.DataFrame
             Taxi DataFrame with assigned district names.
         """
@@ -157,26 +157,32 @@ class Preprocessing:
     def assign_district_vectorized(self, taxi_df: pd.DataFrame) -> pd.DataFrame:
         """
         Assigns district names to taxi data based on their start coordinates using vectorized operations.
+        
         This method iterates over the districts dataframe and assigns the corresponding district name
         to each taxi trip based on the start longitude and latitude. If the districts data is not loaded,
         it assigns "no district" to all taxi trips.
+
         Parameters:
         -----------
         taxi_df : pd.DataFrame
             DataFrame containing taxi trip data with columns 'START_LONG', 'START_LAT', and 'DISTRICT_NAME'.
+
         Returns:
         --------
         pd.DataFrame
             Updated DataFrame with the 'DISTRICT_NAME' column assigned based on the start coordinates.
+
         Raises:
         -------
         None
+
         Notes:
         ------
         - The method assumes that the 'districts_df' attribute is a DataFrame with columns 'left_long',
-          'right_long', 'lower_lat', 'upper_lat', and 'DISTRICT_NAME'.
+        'right_long', 'lower_lat', 'upper_lat', and 'DISTRICT_NAME'.
         - The 'DISTRICT_NAME' column in the taxi_df should initially be set to "no district" for proper assignment.
         - Logging is used to provide information and debugging details about the assignment process.
+
         """
 
         if self.districts_df is None:
@@ -261,7 +267,7 @@ class Preprocessing:
         Remove rows from the DataFrame where the specified missing data column has the missing flag.
 
         Parameters:
-        ----------
+        -----------
         df : pd.DataFrame
             The input DataFrame.
         missing_data_column : str, optional
@@ -270,12 +276,12 @@ class Preprocessing:
             The flag value that indicates missing data (default is True).
 
         Returns:
-        -------
+        --------
         pd.DataFrame
             The DataFrame with rows containing missing data removed.
 
         Raises:
-        ------
+        -------
         ValueError
             If the specified missing data column does not exist in the DataFrame.
         """
@@ -300,19 +306,19 @@ class Preprocessing:
         Converts a UNIX timestamp into a windows timestamp in the year-month-day hour minute-second format
 
         Parameters:
-        ----------
+        -----------
         df : pd.DataFrame
             The input DataFrame.
         data_column : str, optional
             The name of the column that indicates the timestamp data (default is "TIMESTAMP").
 
         Returns:
-        -------
+        --------
         pd.DataFrame
             The DataFrame with the converted timestamp in a new column named 'CONVERTED_TIMESTAMP'.
 
         Raises:
-        ------
+        -------
         ValueError
             If the specified timestamp column does not exist in the DataFrame.
         """
@@ -347,7 +353,7 @@ class Preprocessing:
         Calculate the total distance of each trip based on the polyline data.
 
         Parameters:
-        ----------
+        -----------
         df : pd.DataFrame
             The input DataFrame with a 'POLYLINE' column.
         polyline_column : str, optional
@@ -358,12 +364,12 @@ class Preprocessing:
             Unit for distance calculation ("km" or "miles"). Defaults to "km".
 
         Returns:
-        -------
+        --------
         pd.DataFrame
             DataFrame with a new column containing the total distance of each trip.
 
         Raises:
-        ------
+        -------
         ValueError
             If the specified polyline column does not exist or contain invalid data.
         """
@@ -410,14 +416,14 @@ class Preprocessing:
         Calculate the travel time based on the polyline data where each point represents 15 seconds.
 
         Parameters:
-        ----------
+        -----------
         df : pd.DataFrame
             The input DataFrame with a 'POLYLINE' column.
         polyline_column : str, optional
             The name of the column containing the polyline data.
 
         Returns:
-        -------
+        --------
         pd.DataFrame
             DataFrame with an added 'TRAVEL_TIME' column containing the travel time in seconds.
         """
@@ -448,7 +454,7 @@ class Preprocessing:
         Calculate the average speed for each trip based on distance and travel time.
 
         Parameters:
-        ----------
+        -----------
         df : pd.DataFrame
             The input DataFrame.
         distance_column : str, optional
@@ -461,12 +467,12 @@ class Preprocessing:
             Unit for average speed calculation ("km/h" or "miles/h"). Defaults to "km/h".
 
         Returns:
-        -------
+        --------
         pd.DataFrame
             DataFrame with a new column containing the average speed of each trip.
 
         Raises:
-        ------
+        -------
         ValueError
             If the specified distance or travel time columns do not exist or contain invalid data.
         """
@@ -643,19 +649,19 @@ class Preprocessing:
         Calculate the weekday from the timestamp column and add it as a new column.
 
         Parameters:
-        ----------
+        -----------
         df : pd.DataFrame
             The input DataFrame with a datetime timestamp column.
         timestamp_column : str, optional
             The name of the column that contains datetime timestamp data (default is "TIMESTAMP").
 
         Returns:
-        -------
+        --------
         pd.DataFrame
             The DataFrame with a new column named 'WEEKDAY'.
 
         Raises:
-        ------
+        -------
         ValueError
             If the specified timestamp column does not exist in the DataFrame.
         """
@@ -686,7 +692,7 @@ class Preprocessing:
         Calculate end time by adding travel time to the start time.
 
         Parameters:
-        ----------
+        -----------
         df : pd.DataFrame
             The input DataFrame.
         start_time_column : str, optional
@@ -695,12 +701,12 @@ class Preprocessing:
             The name of the column that contains travel time data (default is "TRAVEL_TIME").
 
         Returns:
-        -------
+        --------
         pd.DataFrame
             The DataFrame with a new column 'END_TIME'.
 
         Raises:
-        ------
+        -------
         ValueError
             If the specified start time or travel time columns do not exist or contain invalid data.
         """
@@ -759,19 +765,19 @@ class Preprocessing:
         Drops the specified columns from the DataFrame.
 
         Parameters:
-        ----------
+        -----------
         df : pd.DataFrame
             The input DataFrame from which columns will be dropped.
         columns_to_drop : list, optional
             A list of column names to drop. If not provided, defaults to ["ORIGIN_CALL", "ORIGIN_STAND"].
 
         Returns:
-        -------
+        --------
         pd.DataFrame
             A new DataFrame with the specified columns removed.
 
         Raises:
-        ------
+        -------
         ValueError
             If the input DataFrame is empty.
         """

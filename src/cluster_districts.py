@@ -19,9 +19,9 @@ from sklearn.decomposition import PCA
 from sklearn.metrics import silhouette_score
 from tqdm import tqdm
 
-from src.districts import DistrictLoadError, load_districts
-from src.helper import read_csv_with_progress, save_dataframe_if_not_exists
-from src.logger import get_logger
+from districts import DistrictLoadError, load_districts
+from helper import read_csv_with_progress, save_dataframe_if_not_exists
+from logger import get_logger
 
 logger = get_logger(__name__)
 

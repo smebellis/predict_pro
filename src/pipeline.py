@@ -5,15 +5,15 @@ from typing import Dict
 
 import pandas as pd
 
-from src.districts import load_districts
-from src.helper import (
+from districts import load_districts
+from helper import (
     parse_arguments,
     read_csv_with_progress,
     save_dataframe_if_not_exists,
     save_dataframe_overwrite,
 )
-from src.logger import get_logger
-from src.Preprocessing import Preprocessing
+from logger import get_logger
+from Preprocessing import Preprocessing
 
 logger = get_logger(__name__)
 

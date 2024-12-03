@@ -33,6 +33,8 @@ The dataset comprises one record per completed trip, featuring the following 9 a
 
 [Taxi Trajectory Dataset on Google Drive](https://drive.google.com/file/d/1rmJuNl6tenjid_Kp9roIKP176JKTYSvj/view?usp=drive_link)
 
+## Manually download dataset using Kaggle API
+
  1. Installation
 
     Ensure you have Python and pip installed on your system.

@@ -107,7 +107,7 @@ Using pip
 
 Change branches
 
-`> git checkout demo_prep`
+`> git checkout demo`
 
 1. Run preprocessing pipeline:
 - `python scripts/run_preprocessing_pipeline.py`
